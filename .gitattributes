@@ -1,5 +1,4 @@
 * text=auto
-
 *.cs text diff=csharp
 *.shader text
 *.compute text
