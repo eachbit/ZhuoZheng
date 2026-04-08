@@ -1,17 +1,26 @@
 # Unity generated folders
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Mm]emoryCaptures/
-[Uu]ser[Ss]ettings/
+.utmp/
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Mm]emoryCaptures/
+/[Uu]ser[Ss]ettings/
+/[Rr]ecordings/
+*.log
 
 # Project-local runtime data
 [Ss]ave[Dd]ata/
 
+# Asset Store / plugin generated
+# /[Aa]ssets/AssetStoreTools*
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
 # Generated IDE files
+ExportedObj/
+.consulo/
 *.csproj
 *.unityproj
 *.sln
@@ -26,11 +35,18 @@
 *.mdb
 *.opendb
 *.VC.db
+*.DotSettings.user
+
+# Generated meta/debug helpers
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
 
 # Visual Studio / Rider / VS Code
 .vs/
 .idea/
 .vscode/
+.gradle/
 
 # OS files
 .DS_Store
@@ -39,3 +55,33 @@ Desktop.ini
 
 # Crash reports
 sysinfo.txt
+mono_crash.*
+crashlytics-build.properties
+
+# Blender imports
+*.blend1
+*.blend1.meta
+
+# Build artifacts
+*.apk
+*.aab
+*.unitypackage
+*.unitypackage.meta
+*.app
+
+# TestRunner generated files
+InitTestScene*.unity*
+/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Addressables default ignores
+/ServerData
+/[Aa]ssets/StreamingAssets/aa*
+/[Aa]ssets/AddressableAssetsData/link.xml*
+/[Aa]ssets/Addressables_Temp*
+/[Aa]ssets/AddressableAssetsData/*/*.bin*
+
+# Visual Scripting auto-generated files
+/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
+/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
+/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
+/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
