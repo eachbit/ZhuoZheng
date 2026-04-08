@@ -1,5 +1,8 @@
 using System.Collections;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace ZhuozhengYuan
 {
@@ -18,6 +21,18 @@ namespace ZhuozhengYuan
         public DialogueLine[] dialogueLines;
         public bool usePoseAsViewpoint = false;
 
+        [Header("Old Gardener Visual")]
+        public GameObject oldGardenerVisualPrefab;
+        public string oldGardenerVisualEditorAssetPath = string.Empty;
+        public Vector3 oldGardenerVisualLocalPosition = Vector3.zero;
+        public Vector3 oldGardenerVisualLocalEulerAngles = Vector3.zero;
+        public Vector3 oldGardenerVisualLocalScale = Vector3.one;
+        public bool autoFitSpawnedVisualHeight = true;
+        public float spawnedVisualTargetHeight = 1.72f;
+        public bool autoGroundSpawnedVisual = true;
+        public bool hidePlaceholderRenderers = true;
+        public bool hidePlaceholderColliders = true;
+
         [Header("Runtime Safety Support")]
         public bool createRuntimeSupportPlatforms = true;
         public Vector2 introSupportSize = new Vector2(40f, 40f);
@@ -32,6 +47,7 @@ namespace ZhuozhengYuan
         private Transform _runtimeSupportRoot;
         private GameObject _introSupportPlatform;
         private GameObject _postSupportPlatform;
+        private GameObject _spawnedOldGardenerVisual;
 
         public void PrepareRuntimeSupports()
         {
@@ -60,6 +76,8 @@ namespace ZhuozhengYuan
             {
                 SnapPlayerToConfiguredPose(playerIntroPose);
             }
+
+            EnsureOldGardenerVisualReady();
 
             if (oldGardenerActor != null)
             {
@@ -212,6 +230,151 @@ namespace ZhuozhengYuan
             }
 
             manager.playerController.SnapToPose(pose);
+        }
+
+        private void EnsureOldGardenerVisualReady()
+        {
+            if (oldGardenerActor == null)
+            {
+                return;
+            }
+
+            bool hasAuthoredVisual = HasAuthoredVisualChild(oldGardenerActor);
+            if (!hasAuthoredVisual && _spawnedOldGardenerVisual == null)
+            {
+                GameObject visualPrefab = ResolveOldGardenerVisualPrefab();
+                if (visualPrefab != null)
+                {
+                    _spawnedOldGardenerVisual = Instantiate(visualPrefab, oldGardenerActor, false);
+                    _spawnedOldGardenerVisual.name = "OldGardenerVisual";
+                    ApplySpawnedVisualTransform(_spawnedOldGardenerVisual.transform);
+                }
+            }
+
+            bool hasAnyVisual = hasAuthoredVisual || _spawnedOldGardenerVisual != null;
+            if (hasAnyVisual)
+            {
+                SetPlaceholderPresentation(false);
+            }
+        }
+
+        private GameObject ResolveOldGardenerVisualPrefab()
+        {
+            if (oldGardenerVisualPrefab != null)
+            {
+                return oldGardenerVisualPrefab;
+            }
+
+#if UNITY_EDITOR
+            if (!string.IsNullOrWhiteSpace(oldGardenerVisualEditorAssetPath))
+            {
+                return AssetDatabase.LoadAssetAtPath<GameObject>(oldGardenerVisualEditorAssetPath);
+            }
+
+            string[] modelGuids = AssetDatabase.FindAssets("laoren t:Model", new[] { "Assets/Figure" });
+            if (modelGuids.Length > 0)
+            {
+                string assetPath = AssetDatabase.GUIDToAssetPath(modelGuids[0]);
+                return AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+            }
+#endif
+
+            return null;
+        }
+
+        private bool HasAuthoredVisualChild(Transform root)
+        {
+            if (root == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < root.childCount; index++)
+            {
+                Transform child = root.GetChild(index);
+                if (child == null || child.gameObject == _spawnedOldGardenerVisual)
+                {
+                    continue;
+                }
+
+                if (child.GetComponentInChildren<Renderer>(true) != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void ApplySpawnedVisualTransform(Transform visualTransform)
+        {
+            if (visualTransform == null || oldGardenerActor == null)
+            {
+                return;
+            }
+
+            visualTransform.localPosition = oldGardenerVisualLocalPosition;
+            visualTransform.localRotation = Quaternion.Euler(oldGardenerVisualLocalEulerAngles);
+            visualTransform.localScale = oldGardenerVisualLocalScale;
+
+            if (autoFitSpawnedVisualHeight && spawnedVisualTargetHeight > 0.01f)
+            {
+                if (TryGetCombinedBounds(visualTransform.gameObject, out Bounds initialBounds) && initialBounds.size.y > 0.01f)
+                {
+                    float scaleFactor = spawnedVisualTargetHeight / initialBounds.size.y;
+                    visualTransform.localScale = oldGardenerVisualLocalScale * scaleFactor;
+                }
+            }
+
+            if (autoGroundSpawnedVisual && TryGetCombinedBounds(visualTransform.gameObject, out Bounds fittedBounds))
+            {
+                float yOffset = oldGardenerActor.position.y - fittedBounds.min.y;
+                visualTransform.position += Vector3.up * yOffset;
+            }
+        }
+
+        private void SetPlaceholderPresentation(bool visible)
+        {
+            if (oldGardenerActor == null)
+            {
+                return;
+            }
+
+            if (hidePlaceholderRenderers)
+            {
+                Renderer[] renderers = oldGardenerActor.GetComponents<Renderer>();
+                for (int index = 0; index < renderers.Length; index++)
+                {
+                    renderers[index].enabled = visible;
+                }
+            }
+
+            if (hidePlaceholderColliders)
+            {
+                Collider[] colliders = oldGardenerActor.GetComponents<Collider>();
+                for (int index = 0; index < colliders.Length; index++)
+                {
+                    colliders[index].enabled = visible;
+                }
+            }
+        }
+
+        private static bool TryGetCombinedBounds(GameObject root, out Bounds bounds)
+        {
+            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0)
+            {
+                bounds = default;
+                return false;
+            }
+
+            bounds = renderers[0].bounds;
+            for (int index = 1; index < renderers.Length; index++)
+            {
+                bounds.Encapsulate(renderers[index].bounds);
+            }
+
+            return true;
         }
     }
 }

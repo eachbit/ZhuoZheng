@@ -27,6 +27,8 @@ namespace ZhuozhengYuan.EditorTools
 
             GameObject gardenModel = InstantiateAssetIfPossible(ResolveGardenModelPath(), "GardenModel");
             GameObject playerVisual = InstantiateAssetIfPossible(ResolveYouthModelPath(), "PlayerVisual");
+            string oldGardenerModelPath = ResolveOldGardenerModelPath();
+            GameObject oldGardenerPrefab = LoadModelAsset(oldGardenerModelPath);
             Bounds sceneBounds = CalculateSceneBounds(gardenModel);
             if (sceneBounds.size == Vector3.zero)
             {
@@ -60,7 +62,7 @@ namespace ZhuozhengYuan.EditorTools
             Transform gardenerDialogue = CreateMarker(referencesRoot.transform, "OldGardenerDialogue", sceneBounds.center + new Vector3(1f, 0f, -5f));
             Transform gardenerExit = CreateMarker(referencesRoot.transform, "OldGardenerExit", sceneBounds.center + new Vector3(6f, 0f, -2f));
 
-            GameObject oldGardener = CreatePlaceholderCapsule("OldGardenerPlaceholder", gardenerEntrance.position + Vector3.up, new Color(0.82f, 0.82f, 0.82f));
+            GameObject oldGardener = CreateOldGardenerActor(gardenerEntrance.position, oldGardenerPrefab);
 
             GameObject chapterMarkers = new GameObject("Chapter01Markers");
             chapterMarkers.transform.position = sceneBounds.center;
@@ -90,6 +92,8 @@ namespace ZhuozhengYuan.EditorTools
             introController.oldGardenerEntrancePoint = gardenerEntrance;
             introController.oldGardenerDialoguePoint = gardenerDialogue;
             introController.oldGardenerExitPoint = gardenerExit;
+            introController.oldGardenerVisualPrefab = oldGardenerPrefab;
+            introController.oldGardenerVisualEditorAssetPath = oldGardenerModelPath;
 
             chapterDirector.manager = gameManager;
             chapterDirector.environmentController = environmentController;
@@ -112,6 +116,80 @@ namespace ZhuozhengYuan.EditorTools
                 "Garden_Main created",
                 "A starter scene, global invisible ground, placeholder player, placeholder elder, and chapter one interaction markers were created.\n\nNext, manually adjust positions, add InvisibleBlockerRoot blockers, bind water effects, and move the chapter markers to the real chapter one locations.",
                 "OK");
+        }
+
+        [MenuItem("Tools/Zhuozhengyuan/Attach Elder Model To Current Scene Placeholder")]
+        public static void AttachElderModelToCurrentScenePlaceholder()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            if (!scene.IsValid() || !scene.isLoaded)
+            {
+                EditorUtility.DisplayDialog("No active scene", "Open the scene you want to modify first.", "OK");
+                return;
+            }
+
+            GameObject oldGardenerRoot = GameObject.Find("OldGardenerPlaceholder");
+            if (oldGardenerRoot == null)
+            {
+                EditorUtility.DisplayDialog("Old gardener not found", "The current scene does not contain an object named OldGardenerPlaceholder.", "OK");
+                return;
+            }
+
+            string assetPath = ResolveOldGardenerModelPath();
+            GameObject oldGardenerPrefab = LoadModelAsset(assetPath);
+            if (oldGardenerPrefab == null)
+            {
+                EditorUtility.DisplayDialog("Model not found", "Could not find a model named laoren.fbx under Assets/Figure.", "OK");
+                return;
+            }
+
+            bool hasVisualChild = false;
+            for (int index = 0; index < oldGardenerRoot.transform.childCount; index++)
+            {
+                if (oldGardenerRoot.transform.GetChild(index).GetComponentInChildren<Renderer>(true) != null)
+                {
+                    hasVisualChild = true;
+                    break;
+                }
+            }
+
+            if (!hasVisualChild)
+            {
+                GameObject visualInstance = PrefabUtility.InstantiatePrefab(oldGardenerPrefab, scene) as GameObject;
+                if (visualInstance != null)
+                {
+                    Undo.RegisterCreatedObjectUndo(visualInstance, "Attach elder model");
+                    visualInstance.name = "OldGardenerVisual";
+                    visualInstance.transform.SetParent(oldGardenerRoot.transform, false);
+                    visualInstance.transform.localPosition = Vector3.zero;
+                    visualInstance.transform.localRotation = Quaternion.identity;
+                    visualInstance.transform.localScale = Vector3.one;
+                }
+            }
+
+            Renderer[] rootRenderers = oldGardenerRoot.GetComponents<Renderer>();
+            for (int index = 0; index < rootRenderers.Length; index++)
+            {
+                rootRenderers[index].enabled = false;
+            }
+
+            Collider[] rootColliders = oldGardenerRoot.GetComponents<Collider>();
+            for (int index = 0; index < rootColliders.Length; index++)
+            {
+                rootColliders[index].enabled = false;
+            }
+
+            IntroSequenceController introController = Object.FindObjectOfType<IntroSequenceController>();
+            if (introController != null)
+            {
+                Undo.RecordObject(introController, "Bind elder model");
+                introController.oldGardenerVisualPrefab = oldGardenerPrefab;
+                introController.oldGardenerVisualEditorAssetPath = assetPath;
+                EditorUtility.SetDirty(introController);
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorUtility.DisplayDialog("Elder model attached", "The old gardener model was attached to OldGardenerPlaceholder. You can now manually adjust the child transform in the scene.", "OK");
         }
 
         private static void CreateLighting()
@@ -241,7 +319,7 @@ namespace ZhuozhengYuan.EditorTools
                 return null;
             }
 
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+            GameObject prefab = LoadModelAsset(assetPath);
             if (prefab == null)
             {
                 return null;
@@ -271,6 +349,30 @@ namespace ZhuozhengYuan.EditorTools
             }
 
             return capsule;
+        }
+
+        private static GameObject CreateOldGardenerActor(Vector3 position, GameObject oldGardenerPrefab)
+        {
+            GameObject root = new GameObject("OldGardenerPlaceholder");
+            root.transform.position = position;
+
+            if (oldGardenerPrefab != null)
+            {
+                GameObject visualInstance = PrefabUtility.InstantiatePrefab(oldGardenerPrefab) as GameObject;
+                if (visualInstance != null)
+                {
+                    visualInstance.name = "OldGardenerVisual";
+                    visualInstance.transform.SetParent(root.transform, false);
+                    visualInstance.transform.localPosition = Vector3.zero;
+                    visualInstance.transform.localRotation = Quaternion.identity;
+                    visualInstance.transform.localScale = Vector3.one;
+                    return root;
+                }
+            }
+
+            GameObject placeholder = CreatePlaceholderCapsule("OldGardenerBodyPlaceholder", position + Vector3.up, new Color(0.82f, 0.82f, 0.82f));
+            placeholder.transform.SetParent(root.transform, true);
+            return root;
         }
 
         private static string ResolveGardenModelPath()
@@ -303,6 +405,31 @@ namespace ZhuozhengYuan.EditorTools
             }
 
             return AssetDatabase.GUIDToAssetPath(modelGuids[0]);
+        }
+
+        private static string ResolveOldGardenerModelPath()
+        {
+            string[] modelGuids = AssetDatabase.FindAssets("laoren t:Model", new[] { "Assets/Figure" });
+            for (int index = 0; index < modelGuids.Length; index++)
+            {
+                string assetPath = AssetDatabase.GUIDToAssetPath(modelGuids[index]);
+                if (Path.GetFileName(assetPath).Equals("laoren.fbx", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return assetPath;
+                }
+            }
+
+            return null;
+        }
+
+        private static GameObject LoadModelAsset(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                return null;
+            }
+
+            return AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
         }
 
         private static Bounds CalculateSceneBounds(GameObject rootObject)
