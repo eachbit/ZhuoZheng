@@ -30,10 +30,12 @@ namespace ZhuozhengYuan
         private static readonly Collider[] RouteOverlapBuffer = new Collider[32];
 
         public FirstPersonPlayerController playerController;
+        public PlayerViewModeController playerViewModeController;
         public PlayerInteractor playerInteractor;
         public PrototypeRuntimeUI runtimeUI;
         public IntroSequenceController introController;
         public Chapter01Director chapter01Director;
+        public Chapter01AuthoredRouteGuide chapter01RouteGuide;
         public GardenModelHiddenCollisionBuilder hiddenCollisionBuilder;
         public bool createStartAreaGroundIfNeeded = true;
         public Vector2 startAreaGroundSize = new Vector2(260f, 260f);
@@ -83,7 +85,7 @@ namespace ZhuozhengYuan
         };
         public string walkableGroundRootName = "WalkableGroundRoot";
         public int totalPages = 5;
-        public bool autoPlayIntro = true;
+        public bool autoPlayIntro = false;
 
         public static GardenGameManager Instance { get; private set; }
 
@@ -91,7 +93,13 @@ namespace ZhuozhengYuan
 
         public bool CanPlayerInteract
         {
-            get { return !_introActive && !_dialogueActive && !_directionChoiceActive; }
+            get
+            {
+                return !_introActive
+                    && !_dialogueActive
+                    && !_directionChoiceActive
+                    && (chapter01Director == null || !chapter01Director.HasActiveGatePuzzle);
+            }
         }
 
         private bool _introActive;
@@ -129,6 +137,8 @@ namespace ZhuozhengYuan
                 playerInteractor.gameManager = this;
             }
 
+            EnsurePlayerViewModeController();
+
             if (introController != null)
             {
                 introController.manager = this;
@@ -143,6 +153,12 @@ namespace ZhuozhengYuan
             if (chapter01Director != null)
             {
                 chapter01Director.Initialize(this, CurrentSaveData);
+            }
+
+            EnsureChapter01RouteGuide();
+            if (chapter01RouteGuide != null)
+            {
+                chapter01RouteGuide.Initialize(this, chapter01Director, introController);
             }
 
             RefreshPlayerRuntimeState();
@@ -236,6 +252,11 @@ namespace ZhuozhengYuan
             _introActive = false;
             RefreshPlayerRuntimeState();
 
+            if (chapter01RouteGuide != null)
+            {
+                chapter01RouteGuide.RebuildGuide();
+            }
+
             if (!skipSave)
             {
                 SaveProgress();
@@ -264,6 +285,20 @@ namespace ZhuozhengYuan
             SaveSystem.Save(CurrentSaveData);
         }
 
+        public bool TryGetResolvedChapter01RoutePathCopy(out List<Vector3> routePath, out Transform leftGate, out Transform rightGate)
+        {
+            if (TryResolveChapter01RoutePath(out List<Vector3> resolvedRoutePath, out leftGate, out rightGate))
+            {
+                routePath = new List<Vector3>(resolvedRoutePath);
+                return true;
+            }
+
+            routePath = null;
+            leftGate = null;
+            rightGate = null;
+            return false;
+        }
+
         private IEnumerator BeginIntroRoutine()
         {
             _introActive = true;
@@ -286,10 +321,56 @@ namespace ZhuozhengYuan
         {
             bool gameplayAllowed = !_introActive && !_dialogueActive && !_directionChoiceActive;
 
+            if (playerViewModeController != null)
+            {
+                playerViewModeController.SetControlLocked(!gameplayAllowed);
+                playerViewModeController.SetCursorForGameplay(gameplayAllowed);
+                return;
+            }
+
             if (playerController != null)
             {
                 playerController.SetControlLocked(!gameplayAllowed);
                 playerController.SetCursorForGameplay(gameplayAllowed);
+            }
+        }
+
+        private void EnsurePlayerViewModeController()
+        {
+            if (playerController == null)
+            {
+                return;
+            }
+
+            if (playerViewModeController == null)
+            {
+                playerViewModeController = playerController.GetComponent<PlayerViewModeController>();
+            }
+
+            if (playerViewModeController == null)
+            {
+                playerViewModeController = playerController.gameObject.AddComponent<PlayerViewModeController>();
+            }
+
+            playerViewModeController.playerController = playerController;
+            playerViewModeController.playerInteractor = playerInteractor;
+
+            if (playerInteractor != null)
+            {
+                playerInteractor.viewModeController = playerViewModeController;
+            }
+        }
+
+        private void EnsureChapter01RouteGuide()
+        {
+            if (chapter01RouteGuide == null)
+            {
+                chapter01RouteGuide = GetComponent<Chapter01AuthoredRouteGuide>();
+            }
+
+            if (chapter01RouteGuide == null)
+            {
+                chapter01RouteGuide = gameObject.AddComponent<Chapter01AuthoredRouteGuide>();
             }
         }
 
@@ -1442,12 +1523,22 @@ namespace ZhuozhengYuan
 
         private float GetCharacterBottomOffset()
         {
-            if (playerController == null || playerController.characterController == null)
+            CharacterController controller = null;
+            if (playerViewModeController != null)
+            {
+                controller = playerViewModeController.ActiveCharacterController;
+            }
+
+            if (controller == null && playerController != null)
+            {
+                controller = playerController.characterController;
+            }
+
+            if (controller == null)
             {
                 return 0f;
             }
 
-            CharacterController controller = playerController.characterController;
             return controller.center.y - controller.height * 0.5f;
         }
 

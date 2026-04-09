@@ -12,19 +12,41 @@ namespace ZhuozhengYuan
         public WaterDirectionInteractable flowSelector;
         public PagePickupInteractable pagePickup;
         public string correctDirection = "东";
-        public string[] directionOptions = { "东", "西", "南" };
+        public string[] directionOptions = { "西", "南", "东" };
 
         public string objectiveOpenGates = "前往远香堂，开启两处暗闸。";
-        public string objectiveChooseFlow = "至水畔调定水流方向。";
-        public string objectiveCollectPage = "在石隙间寻得《长物志》残页。";
-        public string objectiveCompleted = "第一章已完成，继续前行。";
+        public string objectiveChooseFlow = "尝试调转水流，找出真正能唤醒水脉的方向。";
+        public string objectiveCollectPage = "在石缝中拾取《长物志》残页。";
+        public string objectiveCompleted = "第一章已完成，可继续前行。";
+
+        public KeyCode gateRotateNegativeKey = KeyCode.A;
+        public KeyCode gateRotatePositiveKey = KeyCode.D;
+        public KeyCode gateConfirmKey = KeyCode.E;
+        public KeyCode gateCancelKey = KeyCode.Escape;
 
         public Chapter01State CurrentState { get; private set; }
+
+        public bool HasActiveGatePuzzle
+        {
+            get { return _activeGatePuzzle != null; }
+        }
 
         private bool _leftGateOpened;
         private bool _rightGateOpened;
         private bool _pageCollected;
         private string _selectedDirection = string.Empty;
+        private int _directionCycleIndex = -1;
+        private GateInteractable _activeGatePuzzle;
+
+        private void Update()
+        {
+            if (_activeGatePuzzle == null)
+            {
+                return;
+            }
+
+            HandleGatePuzzleInput();
+        }
 
         public void Initialize(GardenGameManager gameManager, SaveData saveData)
         {
@@ -53,6 +75,11 @@ namespace ZhuozhengYuan
             ApplySaveState(saveData);
         }
 
+        public bool IsGateSolved(GateId gateId)
+        {
+            return gateId == GateId.Left ? _leftGateOpened : _rightGateOpened;
+        }
+
         public void ApplySaveState(SaveData saveData)
         {
             if (saveData == null)
@@ -64,6 +91,8 @@ namespace ZhuozhengYuan
             _rightGateOpened = saveData.rightGateOpened;
             _pageCollected = saveData.chapter01PageCollected;
             _selectedDirection = saveData.selectedFlowDirection ?? string.Empty;
+            _directionCycleIndex = ResolveDirectionIndex(_selectedDirection);
+            CancelGatePuzzle();
 
             if (_pageCollected)
             {
@@ -103,44 +132,43 @@ namespace ZhuozhengYuan
                 return;
             }
 
-            if (gateInteractable.gateId == GateId.Left)
+            if (_activeGatePuzzle != null && _activeGatePuzzle != gateInteractable)
             {
-                _leftGateOpened = true;
-            }
-            else
-            {
-                _rightGateOpened = true;
+                CancelGatePuzzle();
             }
 
-            gateInteractable.ApplyOpenedState(true);
-            CurrentState = _leftGateOpened && _rightGateOpened
-                ? Chapter01State.NeedChooseFlow
-                : Chapter01State.NeedOpenGates;
+            _activeGatePuzzle = gateInteractable;
+            _activeGatePuzzle.BeginPuzzleMode();
 
-            manager.ShowToast(gateInteractable.gateDisplayName + "已启。");
-            ApplyRuntimeState();
-            WriteBackSaveState();
-            manager.SaveProgress();
+            if (manager.playerViewModeController != null)
+            {
+                manager.playerViewModeController.SetMovementLocked(true);
+            }
+            else if (manager.playerController != null)
+            {
+                manager.playerController.SetMovementLocked(true);
+            }
+
+            if (environmentController != null)
+            {
+                environmentController.OnGateCalibrationStarted(gateInteractable.gateId);
+            }
         }
 
         public string GetFlowInteractionPrompt(string label)
         {
             if (CurrentState == Chapter01State.NeedOpenGates)
             {
-                return "需先开启两处暗闸";
+                return "需先完成左右暗闸校准";
             }
 
-            if (CurrentState == Chapter01State.Completed)
+            if (CurrentState == Chapter01State.Completed || CurrentState == Chapter01State.PageAvailable)
             {
-                return "水势已成";
+                return "水脉已被唤醒";
             }
 
-            if (CurrentState == Chapter01State.PageAvailable)
-            {
-                return "残页已现于石隙";
-            }
-
-            return "按 E " + label;
+            string currentDirection = string.IsNullOrEmpty(_selectedDirection) ? "未试调" : _selectedDirection;
+            return "按 E 试调" + label + "（当前：" + currentDirection + "）";
         }
 
         public void HandleFlowSelectorInteraction()
@@ -152,17 +180,16 @@ namespace ZhuozhengYuan
 
             if (CurrentState == Chapter01State.NeedOpenGates)
             {
-                manager.ShowToast("需先开启左右两处暗闸。");
                 return;
             }
 
-            if (CurrentState == Chapter01State.Completed || CurrentState == Chapter01State.PageAvailable)
+            if (CurrentState == Chapter01State.PageAvailable || CurrentState == Chapter01State.Completed)
             {
-                manager.ShowToast("水势已成，石隙间可见残页。");
                 return;
             }
 
-            manager.ShowDirectionChoice(directionOptions, OnDirectionSelected);
+            string nextDirection = SelectNextDirection();
+            OnDirectionSelected(nextDirection);
         }
 
         public void HandlePagePickup(PagePickupInteractable pickupInteractable)
@@ -182,10 +209,102 @@ namespace ZhuozhengYuan
             }
 
             manager.AddCollectedPages(1);
-            manager.ShowToast("得《长物志》残页一页。");
             ApplyRuntimeState();
             WriteBackSaveState();
             manager.SaveProgress();
+        }
+
+        private void HandleGatePuzzleInput()
+        {
+            float rotationInput = 0f;
+            if (Input.GetKey(gateRotateNegativeKey))
+            {
+                rotationInput -= 1f;
+            }
+
+            if (Input.GetKey(gateRotatePositiveKey))
+            {
+                rotationInput += 1f;
+            }
+
+            if (Mathf.Abs(rotationInput) > 0.001f)
+            {
+                float delta = rotationInput * Mathf.Max(5f, _activeGatePuzzle.rotateSpeed) * Time.deltaTime;
+                _activeGatePuzzle.AdjustCalibration(delta);
+            }
+
+            if (Input.GetKeyDown(gateCancelKey))
+            {
+                CancelGatePuzzle();
+                return;
+            }
+
+            if (Input.GetKeyDown(gateConfirmKey) && _activeGatePuzzle.IsWithinCalibrationTolerance())
+            {
+                SolveGatePuzzle(_activeGatePuzzle);
+            }
+        }
+
+        private void SolveGatePuzzle(GateInteractable gateInteractable)
+        {
+            if (gateInteractable == null)
+            {
+                return;
+            }
+
+            if (gateInteractable.gateId == GateId.Left)
+            {
+                _leftGateOpened = true;
+            }
+            else
+            {
+                _rightGateOpened = true;
+            }
+
+            gateInteractable.ApplyOpenedState(true);
+            _activeGatePuzzle = null;
+
+            if (manager != null && manager.playerViewModeController != null)
+            {
+                manager.playerViewModeController.SetMovementLocked(false);
+            }
+            else if (manager != null && manager.playerController != null)
+            {
+                manager.playerController.SetMovementLocked(false);
+            }
+
+            if (environmentController != null)
+            {
+                environmentController.OnGateSolved(gateInteractable.gateId);
+            }
+
+            CurrentState = _leftGateOpened && _rightGateOpened
+                ? Chapter01State.NeedChooseFlow
+                : Chapter01State.NeedOpenGates;
+
+            ApplyRuntimeState();
+            WriteBackSaveState();
+            manager.SaveProgress();
+        }
+
+        private void CancelGatePuzzle()
+        {
+            if (_activeGatePuzzle != null)
+            {
+                _activeGatePuzzle.EndPuzzleMode();
+                _activeGatePuzzle = null;
+            }
+
+            if (manager != null && manager.playerViewModeController != null)
+            {
+                manager.playerViewModeController.SetMovementLocked(false);
+            }
+            else if (manager != null && manager.playerController != null)
+            {
+                manager.playerController.SetMovementLocked(false);
+            }
+
+            ApplyRuntimeState();
         }
 
         private void OnDirectionSelected(string direction)
@@ -196,6 +315,7 @@ namespace ZhuozhengYuan
             }
 
             _selectedDirection = direction ?? string.Empty;
+            _directionCycleIndex = ResolveDirectionIndex(_selectedDirection);
 
             if (string.Equals(_selectedDirection, correctDirection, StringComparison.Ordinal))
             {
@@ -203,7 +323,7 @@ namespace ZhuozhengYuan
 
                 if (environmentController != null)
                 {
-                    environmentController.SetFlowing();
+                    environmentController.SetFlowingSolved();
                 }
 
                 CurrentState = Chapter01State.PageAvailable;
@@ -214,10 +334,8 @@ namespace ZhuozhengYuan
 
                 if (environmentController != null)
                 {
-                    environmentController.ShowPage();
+                    environmentController.OnPageRevealed();
                 }
-
-                manager.ShowToast("水波始动，荷影摇曳，游鱼倏忽。");
             }
             else
             {
@@ -225,10 +343,13 @@ namespace ZhuozhengYuan
 
                 if (environmentController != null)
                 {
-                    environmentController.SetDormant();
+                    environmentController.SetDirectionPreview(_selectedDirection);
                 }
 
-                manager.ShowToast("水势未成，请再试。");
+                if (pagePickup != null)
+                {
+                    pagePickup.SetAvailability(false);
+                }
             }
 
             ApplyRuntimeState();
@@ -248,15 +369,25 @@ namespace ZhuozhengYuan
                 rightGate.ApplyOpenedState(_rightGateOpened);
             }
 
-            bool isFlowing = CurrentState == Chapter01State.FlowSolved
-                || CurrentState == Chapter01State.PageAvailable
-                || CurrentState == Chapter01State.Completed;
-
             if (environmentController != null)
             {
-                if (isFlowing)
+                if (_leftGateOpened)
                 {
-                    environmentController.SetFlowing();
+                    environmentController.OnGateSolved(GateId.Left);
+                }
+
+                if (_rightGateOpened)
+                {
+                    environmentController.OnGateSolved(GateId.Right);
+                }
+
+                if (CurrentState == Chapter01State.PageAvailable || CurrentState == Chapter01State.Completed || CurrentState == Chapter01State.FlowSolved)
+                {
+                    environmentController.SetFlowingSolved();
+                }
+                else if (CurrentState == Chapter01State.NeedChooseFlow && !string.IsNullOrEmpty(_selectedDirection))
+                {
+                    environmentController.SetDirectionPreview(_selectedDirection);
                 }
                 else
                 {
@@ -265,7 +396,7 @@ namespace ZhuozhengYuan
 
                 if (CurrentState == Chapter01State.PageAvailable)
                 {
-                    environmentController.ShowPage();
+                    environmentController.OnPageRevealed();
                 }
                 else
                 {
@@ -321,6 +452,40 @@ namespace ZhuozhengYuan
             manager.CurrentSaveData.rightGateOpened = _rightGateOpened;
             manager.CurrentSaveData.selectedFlowDirection = _selectedDirection;
             manager.CurrentSaveData.chapter01PageCollected = _pageCollected;
+        }
+
+        private string SelectNextDirection()
+        {
+            if (directionOptions == null || directionOptions.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            _directionCycleIndex++;
+            if (_directionCycleIndex >= directionOptions.Length)
+            {
+                _directionCycleIndex = 0;
+            }
+
+            return directionOptions[_directionCycleIndex];
+        }
+
+        private int ResolveDirectionIndex(string direction)
+        {
+            if (string.IsNullOrEmpty(direction) || directionOptions == null)
+            {
+                return -1;
+            }
+
+            for (int index = 0; index < directionOptions.Length; index++)
+            {
+                if (string.Equals(directionOptions[index], direction, StringComparison.Ordinal))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
     }
 }

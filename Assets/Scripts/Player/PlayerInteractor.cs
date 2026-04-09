@@ -9,6 +9,7 @@ namespace ZhuozhengYuan
 
         public GardenGameManager gameManager;
         public Camera playerCamera;
+        public PlayerViewModeController viewModeController;
         public float interactDistance = 6f;
         public float interactSphereRadius = 0.75f;
         public bool enableNearbyFallback = true;
@@ -19,6 +20,31 @@ namespace ZhuozhengYuan
         public QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.Collide;
 
         private IInteractable _currentInteractable;
+
+        private void Awake()
+        {
+            if (gameManager == null)
+            {
+                gameManager = GardenGameManager.Instance;
+            }
+
+            if (viewModeController == null)
+            {
+                viewModeController = GetComponent<PlayerViewModeController>();
+            }
+
+            if (playerCamera == null)
+            {
+                if (viewModeController != null && viewModeController.ActiveCamera != null)
+                {
+                    playerCamera = viewModeController.ActiveCamera;
+                }
+                else
+                {
+                    playerCamera = GetComponentInChildren<Camera>(true);
+                }
+            }
+        }
 
         private void Update()
         {
@@ -40,13 +66,15 @@ namespace ZhuozhengYuan
         {
             _currentInteractable = null;
 
-            if (playerCamera == null)
+            Camera interactionCamera = ResolveInteractionCamera();
+
+            if (interactionCamera == null)
             {
                 ClearPrompt();
                 return;
             }
 
-            if (TryFindInteractableByView(out IInteractable interactable))
+            if (TryFindInteractableByView(interactionCamera, out IInteractable interactable))
             {
                 string prompt = interactable.GetInteractionPrompt(this);
                 if (!string.IsNullOrEmpty(prompt))
@@ -57,7 +85,7 @@ namespace ZhuozhengYuan
                 }
             }
 
-            if (enableNearbyFallback && TryFindNearbyInteractable(out IInteractable nearbyInteractable))
+            if (enableNearbyFallback && TryFindNearbyInteractable(interactionCamera, out IInteractable nearbyInteractable))
             {
                 string prompt = nearbyInteractable.GetInteractionPrompt(this);
                 if (!string.IsNullOrEmpty(prompt))
@@ -71,11 +99,11 @@ namespace ZhuozhengYuan
             ClearPrompt();
         }
 
-        private bool TryFindInteractableByView(out IInteractable interactable)
+        private bool TryFindInteractableByView(Camera interactionCamera, out IInteractable interactable)
         {
             interactable = null;
 
-            Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            Ray ray = interactionCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
             int hitCount = Physics.SphereCastNonAlloc(
                 ray,
                 Mathf.Max(0.05f, interactSphereRadius),
@@ -103,12 +131,12 @@ namespace ZhuozhengYuan
             return false;
         }
 
-        private bool TryFindNearbyInteractable(out IInteractable interactable)
+        private bool TryFindNearbyInteractable(Camera interactionCamera, out IInteractable interactable)
         {
             interactable = null;
 
-            Vector3 capsuleTop = playerCamera.transform.position + (Vector3.up * 0.1f);
-            Vector3 capsuleBottom = playerCamera.transform.position - (Vector3.up * Mathf.Max(2f, nearbyFallbackVerticalRange));
+            Vector3 capsuleTop = interactionCamera.transform.position + (Vector3.up * 0.1f);
+            Vector3 capsuleBottom = interactionCamera.transform.position - (Vector3.up * Mathf.Max(2f, nearbyFallbackVerticalRange));
             float radius = Mathf.Max(0.5f, nearbyFallbackRadius);
             int overlapCount = Physics.OverlapCapsuleNonAlloc(
                 capsuleTop,
@@ -128,8 +156,8 @@ namespace ZhuozhengYuan
                     continue;
                 }
 
-                Vector3 nearestPoint = collider != null ? collider.ClosestPoint(playerCamera.transform.position) : playerCamera.transform.position;
-                Vector3 horizontalOffset = nearestPoint - playerCamera.transform.position;
+                Vector3 nearestPoint = collider != null ? collider.ClosestPoint(interactionCamera.transform.position) : interactionCamera.transform.position;
+                Vector3 horizontalOffset = nearestPoint - interactionCamera.transform.position;
                 horizontalOffset.y = 0f;
                 float horizontalDistance = horizontalOffset.magnitude;
                 if (horizontalDistance > radius)
@@ -137,7 +165,7 @@ namespace ZhuozhengYuan
                     continue;
                 }
 
-                float verticalDistance = Mathf.Abs(nearestPoint.y - playerCamera.transform.position.y);
+                float verticalDistance = Mathf.Abs(nearestPoint.y - interactionCamera.transform.position.y);
                 float score = horizontalDistance + (verticalDistance * 0.01f);
                 if (score < bestScore)
                 {
@@ -155,6 +183,21 @@ namespace ZhuozhengYuan
             {
                 gameManager.SetInteractionPrompt(string.Empty);
             }
+        }
+
+        private Camera ResolveInteractionCamera()
+        {
+            if (viewModeController != null && viewModeController.ActiveCamera != null)
+            {
+                return viewModeController.ActiveCamera;
+            }
+
+            if (playerCamera != null)
+            {
+                return playerCamera;
+            }
+
+            return Camera.main;
         }
 
         private static IInteractable FindInteractable(Collider collider)

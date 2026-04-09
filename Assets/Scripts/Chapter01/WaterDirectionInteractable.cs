@@ -5,7 +5,7 @@ namespace ZhuozhengYuan
     public class WaterDirectionInteractable : MonoBehaviour, IInteractable
     {
         public Chapter01Director director;
-        public string interactionLabel = "调水流向";
+        public string interactionLabel = "\u6c34\u6d41\u65b9\u5411";
 
         public bool CanInteract(PlayerInteractor interactor)
         {
@@ -26,7 +26,7 @@ namespace ZhuozhengYuan
         {
             if (director == null)
             {
-                Debug.LogWarning(name + " 未绑定 Chapter01Director。");
+                Debug.LogWarning(name + " is missing a Chapter01Director reference.");
                 return;
             }
 

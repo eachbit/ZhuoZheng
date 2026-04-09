@@ -138,14 +138,6 @@ namespace ZhuozhengYuan
 
         private void OnGUI()
         {
-            EnsureStyles();
-            DrawPageCounter();
-            DrawObjective();
-            DrawToast();
-            DrawInteractionPrompt();
-            DrawDialogueBox();
-            DrawDirectionChoice();
-            DrawFadeOverlay();
         }
 
         private void DrawPageCounter()

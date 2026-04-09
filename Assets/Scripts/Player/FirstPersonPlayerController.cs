@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ZhuozhengYuan
 {
@@ -29,7 +30,18 @@ namespace ZhuozhengYuan
         private float _verticalVelocity;
         private float _pitch;
         private bool _controlLocked;
+        private bool _movementLockedExternally;
         private Transform _attachedCameraTransform;
+
+        public bool IsMovementLockedExternally
+        {
+            get { return _movementLockedExternally; }
+        }
+
+        public Transform CameraPivot
+        {
+            get { return cameraPivot; }
+        }
 
         private void Awake()
         {
@@ -62,12 +74,24 @@ namespace ZhuozhengYuan
 
             HandleRuntimeSpeedAdjustment();
             HandleLook();
+
+            if (_movementLockedExternally)
+            {
+                ApplyGravityOnly();
+                return;
+            }
+
             HandleMove();
         }
 
         public void SetControlLocked(bool locked)
         {
             _controlLocked = locked;
+        }
+
+        public void SetMovementLocked(bool locked)
+        {
+            _movementLockedExternally = locked;
         }
 
         public void SetCursorForGameplay(bool gameplayActive)
@@ -133,8 +157,9 @@ namespace ZhuozhengYuan
                 return;
             }
 
-            float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-            float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+            Vector2 lookInput = ReadLookInput();
+            float mouseX = lookInput.x * mouseSensitivity;
+            float mouseY = lookInput.y * mouseSensitivity;
 
             transform.Rotate(Vector3.up * mouseX);
             _pitch = Mathf.Clamp(_pitch - mouseY, -maxLookAngle, maxLookAngle);
@@ -143,11 +168,12 @@ namespace ZhuozhengYuan
 
         private void HandleMove()
         {
-            Vector3 input = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
+            Vector2 moveInput = ReadMoveInput();
+            Vector3 input = new Vector3(moveInput.x, 0f, moveInput.y);
             input = Vector3.ClampMagnitude(input, 1f);
 
             float currentMoveSpeed = walkSpeed;
-            if (allowRunning && Input.GetKey(runKey))
+            if (allowRunning && IsRunPressed())
             {
                 currentMoveSpeed = runSpeed;
             }
@@ -284,6 +310,85 @@ namespace ZhuozhengYuan
             }
 
             return angle;
+        }
+
+        private Vector2 ReadMoveInput()
+        {
+            Vector2 move = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+            if (move.sqrMagnitude > 0.0001f)
+            {
+                return Vector2.ClampMagnitude(move, 1f);
+            }
+
+            if (Keyboard.current == null)
+            {
+                return Vector2.zero;
+            }
+
+            float horizontal = 0f;
+            float vertical = 0f;
+
+            if (Keyboard.current.aKey.isPressed)
+            {
+                horizontal -= 1f;
+            }
+
+            if (Keyboard.current.dKey.isPressed)
+            {
+                horizontal += 1f;
+            }
+
+            if (Keyboard.current.wKey.isPressed)
+            {
+                vertical += 1f;
+            }
+
+            if (Keyboard.current.sKey.isPressed)
+            {
+                vertical -= 1f;
+            }
+
+            return Vector2.ClampMagnitude(new Vector2(horizontal, vertical), 1f);
+        }
+
+        private Vector2 ReadLookInput()
+        {
+            Vector2 look = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
+            if (look.sqrMagnitude > 0.000001f)
+            {
+                return look;
+            }
+
+            if (Mouse.current == null)
+            {
+                return Vector2.zero;
+            }
+
+            Vector2 delta = Mouse.current.delta.ReadValue();
+            return delta * 0.02f;
+        }
+
+        private bool IsRunPressed()
+        {
+            if (Input.GetKey(runKey))
+            {
+                return true;
+            }
+
+            if (Keyboard.current == null)
+            {
+                return false;
+            }
+
+            switch (runKey)
+            {
+                case KeyCode.LeftShift:
+                    return Keyboard.current.leftShiftKey.isPressed;
+                case KeyCode.RightShift:
+                    return Keyboard.current.rightShiftKey.isPressed;
+                default:
+                    return false;
+            }
         }
     }
 }

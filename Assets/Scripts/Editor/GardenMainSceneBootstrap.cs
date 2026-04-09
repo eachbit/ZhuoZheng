@@ -162,7 +162,7 @@ namespace ZhuozhengYuan.EditorTools
                     visualInstance.name = "OldGardenerVisual";
                     visualInstance.transform.SetParent(oldGardenerRoot.transform, false);
                     visualInstance.transform.localPosition = Vector3.zero;
-                    visualInstance.transform.localRotation = Quaternion.identity;
+                    visualInstance.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
                     visualInstance.transform.localScale = Vector3.one;
                 }
             }
@@ -364,7 +364,7 @@ namespace ZhuozhengYuan.EditorTools
                     visualInstance.name = "OldGardenerVisual";
                     visualInstance.transform.SetParent(root.transform, false);
                     visualInstance.transform.localPosition = Vector3.zero;
-                    visualInstance.transform.localRotation = Quaternion.identity;
+                    visualInstance.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
                     visualInstance.transform.localScale = Vector3.one;
                     return root;
                 }

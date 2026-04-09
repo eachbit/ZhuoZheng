@@ -25,13 +25,14 @@ namespace ZhuozhengYuan
         public GameObject oldGardenerVisualPrefab;
         public string oldGardenerVisualEditorAssetPath = string.Empty;
         public Vector3 oldGardenerVisualLocalPosition = Vector3.zero;
-        public Vector3 oldGardenerVisualLocalEulerAngles = Vector3.zero;
+        public Vector3 oldGardenerVisualLocalEulerAngles = new Vector3(-90f, 0f, 0f);
         public Vector3 oldGardenerVisualLocalScale = Vector3.one;
         public bool autoFitSpawnedVisualHeight = true;
         public float spawnedVisualTargetHeight = 1.72f;
         public bool autoGroundSpawnedVisual = true;
         public bool hidePlaceholderRenderers = true;
         public bool hidePlaceholderColliders = true;
+        public bool autoCorrectAuthoredVisualWhenUntouched = true;
 
         [Header("Runtime Safety Support")]
         public bool createRuntimeSupportPlatforms = true;
@@ -98,6 +99,7 @@ namespace ZhuozhengYuan
             if (oldGardenerActor != null && oldGardenerDialoguePoint != null)
             {
                 yield return MoveActor(oldGardenerActor, oldGardenerDialoguePoint.position);
+                SnapActorRotationToMarker(oldGardenerActor, oldGardenerDialoguePoint);
             }
 
             if (entrancePause > 0f)
@@ -120,6 +122,7 @@ namespace ZhuozhengYuan
             if (oldGardenerActor != null && oldGardenerExitPoint != null)
             {
                 yield return MoveActor(oldGardenerActor, oldGardenerExitPoint.position);
+                SnapActorRotationToMarker(oldGardenerActor, oldGardenerExitPoint);
             }
 
             if (oldGardenerActor != null)
@@ -187,6 +190,17 @@ namespace ZhuozhengYuan
             return true;
         }
 
+        private static void SnapActorRotationToMarker(Transform actor, Transform marker)
+        {
+            if (actor == null || marker == null)
+            {
+                return;
+            }
+
+            Vector3 eulerAngles = marker.rotation.eulerAngles;
+            actor.rotation = Quaternion.Euler(0f, eulerAngles.y, 0f);
+        }
+
         private static void SetPlatformActive(GameObject platformObject, bool active)
         {
             if (platformObject != null && platformObject.activeSelf != active)
@@ -218,7 +232,24 @@ namespace ZhuozhengYuan
 
         private void SnapPlayerToConfiguredPose(Transform pose)
         {
-            if (manager == null || manager.playerController == null || pose == null)
+            if (manager == null || pose == null)
+            {
+                return;
+            }
+
+            if (manager.playerViewModeController != null)
+            {
+                if (usePoseAsViewpoint)
+                {
+                    manager.playerViewModeController.SnapViewToPose(pose);
+                    return;
+                }
+
+                manager.playerViewModeController.SnapToPose(pose);
+                return;
+            }
+
+            if (manager.playerController == null)
             {
                 return;
             }
@@ -240,6 +271,11 @@ namespace ZhuozhengYuan
             }
 
             bool hasAuthoredVisual = HasAuthoredVisualChild(oldGardenerActor);
+            if (hasAuthoredVisual && autoCorrectAuthoredVisualWhenUntouched)
+            {
+                TryNormalizeFirstAuthoredVisualChild(oldGardenerActor);
+            }
+
             if (!hasAuthoredVisual && _spawnedOldGardenerVisual == null)
             {
                 GameObject visualPrefab = ResolveOldGardenerVisualPrefab();
@@ -304,6 +340,49 @@ namespace ZhuozhengYuan
             }
 
             return false;
+        }
+
+        private void TryNormalizeFirstAuthoredVisualChild(Transform root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < root.childCount; index++)
+            {
+                Transform child = root.GetChild(index);
+                if (child == null || child.gameObject == _spawnedOldGardenerVisual)
+                {
+                    continue;
+                }
+
+                if (child.GetComponentInChildren<Renderer>(true) == null)
+                {
+                    continue;
+                }
+
+                if (!LooksUntouchedVisualTransform(child))
+                {
+                    return;
+                }
+
+                ApplySpawnedVisualTransform(child);
+                return;
+            }
+        }
+
+        private static bool LooksUntouchedVisualTransform(Transform visualTransform)
+        {
+            if (visualTransform == null)
+            {
+                return false;
+            }
+
+            bool positionUntouched = visualTransform.localPosition.sqrMagnitude < 0.0001f;
+            bool rotationUntouched = Quaternion.Angle(visualTransform.localRotation, Quaternion.identity) < 0.1f;
+            bool scaleUntouched = (visualTransform.localScale - Vector3.one).sqrMagnitude < 0.0001f;
+            return positionUntouched && rotationUntouched && scaleUntouched;
         }
 
         private void ApplySpawnedVisualTransform(Transform visualTransform)
