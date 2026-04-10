@@ -11,6 +11,7 @@ namespace ZhuozhengYuan
         public bool leftGateOpened;
         public bool rightGateOpened;
         public string selectedFlowDirection = string.Empty;
+        public int chapter01RejectedFlowDirections;
         public bool chapter01PageCollected;
 
         public static SaveData CreateDefault()
@@ -23,6 +24,7 @@ namespace ZhuozhengYuan
                 leftGateOpened = false,
                 rightGateOpened = false,
                 selectedFlowDirection = string.Empty,
+                chapter01RejectedFlowDirections = 0,
                 chapter01PageCollected = false
             };
         }

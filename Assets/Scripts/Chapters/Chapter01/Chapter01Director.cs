@@ -11,13 +11,20 @@ namespace ZhuozhengYuan
         public GateInteractable rightGate;
         public WaterDirectionInteractable flowSelector;
         public PagePickupInteractable pagePickup;
-        public string correctDirection = "东";
-        public string[] directionOptions = { "西", "南", "东" };
+        public string correctDirection = Chapter01FlowDirection.Center;
+        public string[] directionOptions = { "\u897f\u6e20", "\u5357\u6e20", "\u4e2d\u6c60" };
 
-        public string objectiveOpenGates = "前往远香堂，开启两处暗闸。";
-        public string objectiveChooseFlow = "尝试调转水流，找出真正能唤醒水脉的方向。";
-        public string objectiveCollectPage = "在石缝中拾取《长物志》残页。";
-        public string objectiveCompleted = "第一章已完成，可继续前行。";
+        public string objectiveOpenGates = "\u524d\u5f80\u8fdc\u9999\u5802\uff0c\u5f00\u542f\u5de6\u53f3\u4e24\u5904\u6697\u95f8\u3002";
+        public string objectiveChooseFlow = "\u70b9\u51fb\u6c34\u95f8\u5e76\u9009\u62e9\u6c34\u6d41\u65b9\u5411\uff0c\u627e\u51fa\u80fd\u771f\u6b63\u5524\u9192\u6c34\u8109\u7684\u53bb\u5411\u3002";
+        public string objectiveChooseFlowAfterWestRejected = "\u897f\u6e20\u5c3d\u5934\u53ea\u5269\u7a7a\u54cd\uff0c\u518d\u8bd5\u5357\u6e20\u6216\u4e2d\u6c60\u3002";
+        public string objectiveChooseFlowAfterSouthRejected = "\u5357\u6e20\u867d\u6709\u52a8\u9759\uff0c\u5374\u6ca1\u6709\u5524\u9192\u6c34\u8109\uff0c\u518d\u8bd5\u897f\u6e20\u6216\u4e2d\u6c60\u3002";
+        public string objectiveChooseFlowAfterAllRejected = "\u897f\u6e20\u3001\u5357\u6e20\u90fd\u4e0d\u901a\uff0c\u771f\u6b63\u7684\u6d3b\u6c34\u5e94\u56de\u5230\u4e2d\u6c60\u3002";
+        public string objectiveCollectPage = "\u5728\u77f3\u7f1d\u4e2d\u62fe\u53d6\u300a\u957f\u7269\u5fd7\u300b\u6b8b\u9875\u3002";
+        public string objectiveCompleted = "\u7b2c\u4e00\u7ae0\u5df2\u5b8c\u6210\uff0c\u53ef\u7ee7\u7eed\u524d\u884c\u3002";
+        public string flowHintWestRejected = "\u897f\u6e20\u5c3d\u5934\u4f20\u6765\u7a7a\u54cd\uff0c\u50cf\u662f\u65ad\u5728\u6b7b\u8def\u91cc\u3002";
+        public string flowHintSouthRejected = "\u5357\u6e20\u6709\u6c34\u58f0\u5374\u6ca1\u6709\u805a\u5230\u4e2d\u6c60\uff0c\u8fd9\u6761\u8def\u4e0d\u5bf9\u3002";
+        public string flowHintAllRejected = "\u4e24\u6761\u65c1\u8def\u90fd\u4e0d\u901a\uff0c\u771f\u6b63\u7684\u6d3b\u6c34\u5e94\u56de\u5230\u4e2d\u6c60\u3002";
+        public string flowHintCorrect = "\u4e2d\u6c60\u6df1\u5904\u4f20\u6765\u56de\u54cd\uff0c\u6c34\u8109\u88ab\u63a5\u901a\u4e86\u3002";
 
         public KeyCode gateRotateNegativeKey = KeyCode.A;
         public KeyCode gateRotatePositiveKey = KeyCode.D;
@@ -25,6 +32,9 @@ namespace ZhuozhengYuan
         public KeyCode gateCancelKey = KeyCode.Escape;
 
         public Chapter01State CurrentState { get; private set; }
+
+        private const int WestRejectedMask = 1 << 0;
+        private const int SouthRejectedMask = 1 << 1;
 
         public bool HasActiveGatePuzzle
         {
@@ -36,6 +46,7 @@ namespace ZhuozhengYuan
         private bool _pageCollected;
         private string _selectedDirection = string.Empty;
         private int _directionCycleIndex = -1;
+        private int _rejectedDirectionMask;
         private GateInteractable _activeGatePuzzle;
 
         private void Update()
@@ -51,6 +62,8 @@ namespace ZhuozhengYuan
         public void Initialize(GardenGameManager gameManager, SaveData saveData)
         {
             manager = gameManager;
+            correctDirection = Chapter01FlowDirection.Center;
+            directionOptions = Chapter01FlowDirection.CreateOptionLabels();
 
             if (leftGate != null)
             {
@@ -90,8 +103,9 @@ namespace ZhuozhengYuan
             _leftGateOpened = saveData.leftGateOpened;
             _rightGateOpened = saveData.rightGateOpened;
             _pageCollected = saveData.chapter01PageCollected;
-            _selectedDirection = saveData.selectedFlowDirection ?? string.Empty;
+            _selectedDirection = NormalizeDirection(saveData.selectedFlowDirection);
             _directionCycleIndex = ResolveDirectionIndex(_selectedDirection);
+            _rejectedDirectionMask = saveData.chapter01RejectedFlowDirections;
             CancelGatePuzzle();
 
             if (_pageCollected)
@@ -159,16 +173,24 @@ namespace ZhuozhengYuan
         {
             if (CurrentState == Chapter01State.NeedOpenGates)
             {
-                return "需先完成左右暗闸校准";
+                return "\u9700\u5148\u5b8c\u6210\u5de6\u53f3\u6697\u95f8\u6821\u51c6\u3002";
             }
 
             if (CurrentState == Chapter01State.Completed || CurrentState == Chapter01State.PageAvailable)
             {
-                return "水脉已被唤醒";
+                return "\u6c34\u8109\u5df2\u88ab\u5524\u9192";
             }
 
-            string currentDirection = string.IsNullOrEmpty(_selectedDirection) ? "未试调" : _selectedDirection;
-            return "按 E 试调" + label + "（当前：" + currentDirection + "）";
+            string currentDirection = string.IsNullOrEmpty(_selectedDirection)
+                ? "\u672a\u9009\u62e9"
+                : Chapter01FlowDirection.GetLabel(_selectedDirection);
+            string promptHint = GetDirectionPromptHint();
+            if (string.IsNullOrEmpty(promptHint))
+            {
+                return "\u6309 E \u8c03\u8282" + label + "\uff08\u5f53\u524d\uff1a" + currentDirection + "\uff09";
+            }
+
+            return "\u6309 E \u8c03\u8282" + label + "\uff08\u5f53\u524d\uff1a" + currentDirection + "\uff1b" + promptHint + "\uff09";
         }
 
         public void HandleFlowSelectorInteraction()
@@ -185,6 +207,12 @@ namespace ZhuozhengYuan
 
             if (CurrentState == Chapter01State.PageAvailable || CurrentState == Chapter01State.Completed)
             {
+                return;
+            }
+
+            if (manager.runtimeUI != null)
+            {
+                manager.ShowDirectionChoice(GetDirectionOptionsForUi(), OnDirectionOptionSelected);
                 return;
             }
 
@@ -307,6 +335,12 @@ namespace ZhuozhengYuan
             ApplyRuntimeState();
         }
 
+        private void OnDirectionOptionSelected(string optionLabel)
+        {
+            string directionId = Chapter01FlowDirection.GetIdFromOptionLabel(optionLabel);
+            OnDirectionSelected(directionId);
+        }
+
         private void OnDirectionSelected(string direction)
         {
             if (manager == null)
@@ -314,10 +348,11 @@ namespace ZhuozhengYuan
                 return;
             }
 
-            _selectedDirection = direction ?? string.Empty;
+            _selectedDirection = NormalizeDirection(direction);
             _directionCycleIndex = ResolveDirectionIndex(_selectedDirection);
+            bool isCorrectDirection = string.Equals(_selectedDirection, correctDirection, StringComparison.Ordinal);
 
-            if (string.Equals(_selectedDirection, correctDirection, StringComparison.Ordinal))
+            if (isCorrectDirection)
             {
                 CurrentState = Chapter01State.FlowSolved;
 
@@ -339,6 +374,7 @@ namespace ZhuozhengYuan
             }
             else
             {
+                MarkRejectedDirection(_selectedDirection);
                 CurrentState = Chapter01State.NeedChooseFlow;
 
                 if (environmentController != null)
@@ -353,6 +389,18 @@ namespace ZhuozhengYuan
             }
 
             ApplyRuntimeState();
+
+            if (environmentController != null)
+            {
+                environmentController.PlayDirectionSelectionFeedback(
+                    _selectedDirection,
+                    isCorrectDirection,
+                    GetFlowFeedbackSourcePosition(),
+                    GetFlowFeedbackTargetPosition());
+            }
+
+            manager.ShowToast(isCorrectDirection ? flowHintCorrect : GetRejectedDirectionToast(_selectedDirection), 2.8f);
+            ShowDirectionResultBanner(_selectedDirection, isCorrectDirection);
             WriteBackSaveState();
             manager.SaveProgress();
         }
@@ -419,13 +467,19 @@ namespace ZhuozhengYuan
                 return;
             }
 
+            if (ShouldHideObjectiveAtStart())
+            {
+                manager.SetObjective(string.Empty);
+                return;
+            }
+
             switch (CurrentState)
             {
                 case Chapter01State.NeedOpenGates:
                     manager.SetObjective(objectiveOpenGates);
                     break;
                 case Chapter01State.NeedChooseFlow:
-                    manager.SetObjective(objectiveChooseFlow);
+                    manager.SetObjective(GetChooseFlowObjective());
                     break;
                 case Chapter01State.FlowSolved:
                 case Chapter01State.PageAvailable:
@@ -440,6 +494,15 @@ namespace ZhuozhengYuan
             }
         }
 
+        private bool ShouldHideObjectiveAtStart()
+        {
+            return CurrentState == Chapter01State.NeedOpenGates
+                && !_leftGateOpened
+                && !_rightGateOpened
+                && !_pageCollected
+                && string.IsNullOrEmpty(_selectedDirection);
+        }
+
         private void WriteBackSaveState()
         {
             if (manager == null || manager.CurrentSaveData == null)
@@ -451,41 +514,196 @@ namespace ZhuozhengYuan
             manager.CurrentSaveData.leftGateOpened = _leftGateOpened;
             manager.CurrentSaveData.rightGateOpened = _rightGateOpened;
             manager.CurrentSaveData.selectedFlowDirection = _selectedDirection;
+            manager.CurrentSaveData.chapter01RejectedFlowDirections = _rejectedDirectionMask;
             manager.CurrentSaveData.chapter01PageCollected = _pageCollected;
         }
 
         private string SelectNextDirection()
         {
-            if (directionOptions == null || directionOptions.Length == 0)
-            {
-                return string.Empty;
-            }
-
             _directionCycleIndex++;
             if (_directionCycleIndex >= directionOptions.Length)
             {
                 _directionCycleIndex = 0;
             }
 
-            return directionOptions[_directionCycleIndex];
+            return Chapter01FlowDirection.GetIdByIndex(_directionCycleIndex);
         }
 
         private int ResolveDirectionIndex(string direction)
         {
-            if (string.IsNullOrEmpty(direction) || directionOptions == null)
+            return Chapter01FlowDirection.GetIndex(direction);
+        }
+
+        private string NormalizeDirection(string direction)
+        {
+            return Chapter01FlowDirection.Normalize(direction);
+        }
+
+        private string[] GetDirectionOptionsForUi()
+        {
+            string[] options = Chapter01FlowDirection.CreateOptionLabels();
+
+            if (HasRejectedDirection(Chapter01FlowDirection.West))
             {
-                return -1;
+                options[0] += "\uff08\u7a7a\u54cd\uff09";
             }
 
-            for (int index = 0; index < directionOptions.Length; index++)
+            if (HasRejectedDirection(Chapter01FlowDirection.South))
             {
-                if (string.Equals(directionOptions[index], direction, StringComparison.Ordinal))
-                {
-                    return index;
-                }
+                options[1] += "\uff08\u672a\u901a\u4e2d\u6c60\uff09";
             }
 
-            return -1;
+            if (HasRejectedDirection(Chapter01FlowDirection.West) && HasRejectedDirection(Chapter01FlowDirection.South))
+            {
+                options[2] += "\uff08\u50cf\u662f\u6b63\u89e3\uff09";
+            }
+
+            directionOptions = options;
+            return options;
+        }
+
+        private string GetChooseFlowObjective()
+        {
+            bool westRejected = HasRejectedDirection(Chapter01FlowDirection.West);
+            bool southRejected = HasRejectedDirection(Chapter01FlowDirection.South);
+
+            if (westRejected && southRejected)
+            {
+                return objectiveChooseFlowAfterAllRejected;
+            }
+
+            if (westRejected)
+            {
+                return objectiveChooseFlowAfterWestRejected;
+            }
+
+            if (southRejected)
+            {
+                return objectiveChooseFlowAfterSouthRejected;
+            }
+
+            return objectiveChooseFlow;
+        }
+
+        private string GetDirectionPromptHint()
+        {
+            bool westRejected = HasRejectedDirection(Chapter01FlowDirection.West);
+            bool southRejected = HasRejectedDirection(Chapter01FlowDirection.South);
+
+            if (westRejected && southRejected)
+            {
+                return "\u7ebf\u7d22\uff1a\u5e94\u56de\u4e2d\u6c60";
+            }
+
+            if (westRejected)
+            {
+                return "\u5df2\u6392\u9664\uff1a\u897f\u6e20";
+            }
+
+            if (southRejected)
+            {
+                return "\u5df2\u6392\u9664\uff1a\u5357\u6e20";
+            }
+
+            return string.Empty;
+        }
+
+        private string GetRejectedDirectionToast(string direction)
+        {
+            bool westRejected = HasRejectedDirection(Chapter01FlowDirection.West);
+            bool southRejected = HasRejectedDirection(Chapter01FlowDirection.South);
+            if (westRejected && southRejected)
+            {
+                return flowHintAllRejected;
+            }
+
+            switch (NormalizeDirection(direction))
+            {
+                case Chapter01FlowDirection.West:
+                    return flowHintWestRejected;
+                case Chapter01FlowDirection.South:
+                    return flowHintSouthRejected;
+                default:
+                    return objectiveChooseFlow;
+            }
+        }
+
+        private void MarkRejectedDirection(string direction)
+        {
+            _rejectedDirectionMask |= GetRejectedDirectionMask(direction);
+        }
+
+        private bool HasRejectedDirection(string direction)
+        {
+            int directionMask = GetRejectedDirectionMask(direction);
+            return directionMask != 0 && (_rejectedDirectionMask & directionMask) != 0;
+        }
+
+        private int GetRejectedDirectionMask(string direction)
+        {
+            switch (NormalizeDirection(direction))
+            {
+                case Chapter01FlowDirection.West:
+                    return WestRejectedMask;
+                case Chapter01FlowDirection.South:
+                    return SouthRejectedMask;
+                default:
+                    return 0;
+            }
+        }
+
+        private Vector3 GetFlowFeedbackSourcePosition()
+        {
+            if (flowSelector != null)
+            {
+                return flowSelector.transform.position;
+            }
+
+            return transform.position;
+        }
+
+        private Vector3 GetFlowFeedbackTargetPosition()
+        {
+            if (pagePickup != null)
+            {
+                return pagePickup.transform.position;
+            }
+
+            return GetFlowFeedbackSourcePosition() + (Vector3.up * 1.2f);
+        }
+
+        private void ShowDirectionResultBanner(string direction, bool isCorrectDirection)
+        {
+            if (manager == null || manager.runtimeUI == null)
+            {
+                return;
+            }
+
+            string normalizedDirection = NormalizeDirection(direction);
+            string title;
+            string message;
+            Color accentColor;
+
+            if (isCorrectDirection)
+            {
+                title = "\u4e2d\u6c60\u5df2\u8d2f\u901a";
+                message = flowHintCorrect;
+                accentColor = new Color(0.45f, 0.93f, 1f, 1f);
+            }
+            else if (string.Equals(normalizedDirection, Chapter01FlowDirection.West, StringComparison.Ordinal))
+            {
+                title = "\u897f\u6e20\u53ea\u6709\u7a7a\u54cd";
+                message = flowHintWestRejected;
+                accentColor = new Color(1f, 0.78f, 0.35f, 1f);
+            }
+            else
+            {
+                title = "\u5357\u6e20\u672a\u80fd\u805a\u6c34";
+                message = flowHintSouthRejected;
+                accentColor = new Color(0.56f, 0.92f, 0.66f, 1f);
+            }
+
+            manager.runtimeUI.ShowDirectionResult(title, message, accentColor, 2.8f);
         }
     }
 }

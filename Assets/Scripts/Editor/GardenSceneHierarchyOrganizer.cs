@@ -12,7 +12,8 @@ namespace ZhuozhengYuan.EditorTools
         private const string WorldRootName = "_10_World";
         private const string StoryRootName = "_20_Story";
         private const string ChaptersRootName = "_30_Chapters";
-        private const string Chapter01RootName = "_31_Chapter01";
+        private const string Chapter01GameplayRootName = "_31_Chapter01_Gameplay";
+        private const string Chapter01VisualsRootName = "_32_Chapter01_Visuals";
 
         [MenuItem("Tools/Zhuozhengyuan/Organize Current Scene Hierarchy")]
         public static void OrganizeCurrentSceneHierarchy()
@@ -31,7 +32,8 @@ namespace ZhuozhengYuan.EditorTools
             GameObject worldRoot = GetOrCreateSceneRoot(scene, WorldRootName);
             GameObject storyRoot = GetOrCreateSceneRoot(scene, StoryRootName);
             GameObject chaptersRoot = GetOrCreateSceneRoot(scene, ChaptersRootName);
-            GameObject chapter01Root = GetOrCreateChild(chaptersRoot.transform, Chapter01RootName);
+            GameObject chapter01GameplayRoot = GetOrCreateChild(chaptersRoot.transform, Chapter01GameplayRootName);
+            GameObject chapter01VisualsRoot = GetOrCreateChild(chaptersRoot.transform, Chapter01VisualsRootName);
 
             ReparentIfFound(scene, "GardenGame", coreRoot.transform);
             ReparentIfFound(scene, "Player", coreRoot.transform);
@@ -44,8 +46,8 @@ namespace ZhuozhengYuan.EditorTools
             ReparentIfFound(scene, "ReferencePoints", storyRoot.transform);
             ReparentIfFound(scene, "OldGardenerPlaceholder", storyRoot.transform);
 
-            ReparentIfFound(scene, "Chapter01Environment", chapter01Root.transform);
-            ReparentIfFound(scene, "Chapter01Markers", chapter01Root.transform);
+            ReparentIfFound(scene, "Chapter01Environment", chapter01VisualsRoot.transform);
+            ReparentIfFound(scene, "Chapter01Markers", chapter01GameplayRoot.transform);
 
             coreRoot.transform.SetSiblingIndex(0);
             worldRoot.transform.SetSiblingIndex(1);
@@ -57,7 +59,7 @@ namespace ZhuozhengYuan.EditorTools
 
             EditorUtility.DisplayDialog(
                 "Hierarchy Organized",
-                "The current scene hierarchy has been grouped into Core, World, Story, and Chapters.\n\nAll objects keep their world positions.",
+                "The current scene hierarchy has been grouped into Core, World, Story, and Chapters, with Chapter01 split into Gameplay and Visuals.\n\nAll objects keep their world positions.",
                 "OK");
         }
 

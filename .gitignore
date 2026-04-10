@@ -13,6 +13,7 @@
 
 # Project-local runtime data
 [Ss]ave[Dd]ata/
+/Artifacts/
 
 # Asset Store / plugin generated
 # /[Aa]ssets/AssetStoreTools*

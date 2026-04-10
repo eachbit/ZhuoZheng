@@ -13,6 +13,13 @@ namespace ZhuozhengYuan
         private string _objectiveText = string.Empty;
         private string _toastText = string.Empty;
         private float _toastUntilTime;
+        private string _directionResultTitle = string.Empty;
+        private string _directionResultText = string.Empty;
+        private float _directionResultUntilTime;
+        private Color _directionResultAccent = new Color(0.85f, 0.9f, 1f, 1f);
+        private Color _directionFlashColor = new Color(0.85f, 0.9f, 1f, 0f);
+        private float _directionFlashStartTime = -10f;
+        private float _directionFlashUntilTime = -10f;
         private int _collectedPages;
         private float _fadeAlpha;
 
@@ -82,6 +89,22 @@ namespace ZhuozhengYuan
             _toastUntilTime = Time.unscaledTime + duration;
         }
 
+        public void ShowDirectionResult(string title, string message, Color accentColor, float duration = 2.6f)
+        {
+            _directionResultTitle = title ?? string.Empty;
+            _directionResultText = message ?? string.Empty;
+            _directionResultAccent = accentColor;
+            _directionResultUntilTime = Time.unscaledTime + duration;
+            ShowDirectionFlash(accentColor, 0.55f);
+        }
+
+        public void ShowDirectionFlash(Color accentColor, float duration = 0.55f)
+        {
+            _directionFlashColor = accentColor;
+            _directionFlashStartTime = Time.unscaledTime;
+            _directionFlashUntilTime = _directionFlashStartTime + Mathf.Max(0.05f, duration);
+        }
+
         public void ShowDialogue(DialogueLine[] dialogueLines, Action onCompleted)
         {
             if (dialogueLines == null || dialogueLines.Length == 0)
@@ -133,17 +156,36 @@ namespace ZhuozhengYuan
                 {
                     ChooseDirectionByIndex(2);
                 }
+                else if (Input.GetKeyDown(KeyCode.Escape))
+                {
+                    CloseDirectionChoice();
+                }
             }
         }
 
         private void OnGUI()
         {
+            EnsureStyles();
+            DrawPageCounter();
+            DrawObjective();
+            DrawToast();
+            DrawDirectionFlash();
+            DrawDirectionResult();
+            DrawInteractionPrompt();
+            DrawDialogueBox();
+
+            if (_isDirectionChoiceOpen)
+            {
+                DrawDirectionChoice();
+            }
+
+            DrawFadeOverlay();
         }
 
         private void DrawPageCounter()
         {
             GUI.Box(new Rect(24f, 20f, 180f, 54f), string.Empty);
-            GUI.Label(new Rect(38f, 30f, 156f, 28f), "残页：" + _collectedPages + "/" + totalPages, _titleStyle);
+            GUI.Label(new Rect(38f, 30f, 156f, 28f), "\u6b8b\u9875\uff1a" + _collectedPages + "/" + totalPages, _titleStyle);
         }
 
         private void DrawObjective()
@@ -183,6 +225,62 @@ namespace ZhuozhengYuan
             GUI.Label(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, rect.height - 12f), _interactionPrompt, _bodyStyle);
         }
 
+        private void DrawDirectionResult()
+        {
+            if (Time.unscaledTime > _directionResultUntilTime || (string.IsNullOrEmpty(_directionResultTitle) && string.IsNullOrEmpty(_directionResultText)))
+            {
+                return;
+            }
+
+            float width = 520f;
+            float height = 112f;
+            Rect rect = new Rect((Screen.width - width) * 0.5f, Screen.height * 0.18f, width, height);
+
+            Color previousColor = GUI.color;
+            GUI.color = new Color(0.08f, 0.1f, 0.16f, 0.92f);
+            GUI.DrawTexture(rect, Texture2D.whiteTexture);
+
+            Rect accentRect = new Rect(rect.x, rect.y, rect.width, 8f);
+            GUI.color = _directionResultAccent;
+            GUI.DrawTexture(accentRect, Texture2D.whiteTexture);
+            GUI.color = previousColor;
+
+            GUI.Box(rect, string.Empty);
+            GUI.Label(new Rect(rect.x + 20f, rect.y + 18f, rect.width - 40f, 28f), _directionResultTitle, _titleStyle);
+            GUI.Label(new Rect(rect.x + 20f, rect.y + 50f, rect.width - 40f, 44f), _directionResultText, _bodyStyle);
+        }
+
+        private void DrawDirectionFlash()
+        {
+            if (Time.unscaledTime > _directionFlashUntilTime)
+            {
+                return;
+            }
+
+            float duration = Mathf.Max(0.05f, _directionFlashUntilTime - _directionFlashStartTime);
+            float normalized = Mathf.Clamp01((Time.unscaledTime - _directionFlashStartTime) / duration);
+            float pulse = Mathf.Sin(normalized * Mathf.PI);
+            if (pulse <= 0.001f)
+            {
+                return;
+            }
+
+            Color previousColor = GUI.color;
+
+            Color washColor = _directionFlashColor;
+            washColor.a = 0.14f * pulse;
+            GUI.color = washColor;
+            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
+
+            Color bandColor = _directionFlashColor;
+            bandColor.a = 0.24f * pulse;
+            GUI.color = bandColor;
+            float bandHeight = Screen.height * 0.26f;
+            GUI.DrawTexture(new Rect(0f, Screen.height * 0.28f, Screen.width, bandHeight), Texture2D.whiteTexture);
+
+            GUI.color = previousColor;
+        }
+
         private void DrawDialogueBox()
         {
             if (!IsDialogueOpen)
@@ -196,12 +294,12 @@ namespace ZhuozhengYuan
             GUI.Label(new Rect(rect.x + 18f, rect.y + 14f, rect.width - 36f, 30f), currentLine.speaker, _titleStyle);
             GUI.Label(new Rect(rect.x + 18f, rect.y + 52f, rect.width - 36f, 64f), currentLine.text, _bodyStyle);
 
-            if (GUI.Button(new Rect(rect.x + rect.width - 126f, rect.y + rect.height - 46f, 100f, 28f), "继续", _buttonStyle))
+            if (GUI.Button(new Rect(rect.x + rect.width - 126f, rect.y + rect.height - 46f, 100f, 28f), "\u7ee7\u7eed", _buttonStyle))
             {
                 AdvanceDialogue();
             }
 
-            GUI.Label(new Rect(rect.x + 18f, rect.y + rect.height - 40f, 220f, 24f), "空格继续", _smallStyle);
+            GUI.Label(new Rect(rect.x + 18f, rect.y + rect.height - 40f, 220f, 24f), "\u7a7a\u683c\u7ee7\u7eed", _smallStyle);
         }
 
         private void DrawDirectionChoice()
@@ -211,18 +309,30 @@ namespace ZhuozhengYuan
                 return;
             }
 
+            string[] options = _directionOptions ?? Array.Empty<string>();
+
             Rect rect = new Rect((Screen.width - 360f) * 0.5f, (Screen.height - 240f) * 0.5f, 360f, 240f);
             GUI.Box(rect, string.Empty);
-            GUI.Label(new Rect(rect.x + 20f, rect.y + 16f, rect.width - 40f, 28f), "调定水流方向", _titleStyle);
-            GUI.Label(new Rect(rect.x + 20f, rect.y + 48f, rect.width - 40f, 36f), "请选择水流所向（鼠标点击或按 1/2/3）：", _bodyStyle);
+            GUI.Label(new Rect(rect.x + 20f, rect.y + 16f, rect.width - 40f, 28f), "\u8c03\u5b9a\u6c34\u6d41\u65b9\u5411", _titleStyle);
+            GUI.Label(new Rect(rect.x + 20f, rect.y + 48f, rect.width - 40f, 36f), "\u8bf7\u9009\u62e9\u6c34\u6d41\u53bb\u5411\uff08\u9f20\u6807\u70b9\u51fb\u6216\u6309 1/2/3\uff09\uff1a", _bodyStyle);
 
-            for (int index = 0; index < _directionOptions.Length; index++)
+            for (int index = 0; index < options.Length; index++)
             {
-                string option = _directionOptions[index];
+                string option = options[index];
                 if (GUI.Button(new Rect(rect.x + 32f, rect.y + 92f + index * 42f, rect.width - 64f, 32f), (index + 1) + ". " + option, _buttonStyle))
                 {
                     ChooseDirection(option);
+                    GUIUtility.ExitGUI();
+                    return;
                 }
+            }
+
+            GUI.Label(new Rect(rect.x + 20f, rect.y + rect.height - 34f, 180f, 22f), "Esc \u5173\u95ed", _smallStyle);
+            if (GUI.Button(new Rect(rect.x + rect.width - 112f, rect.y + rect.height - 42f, 80f, 28f), "\u5173\u95ed", _buttonStyle))
+            {
+                CloseDirectionChoice();
+                GUIUtility.ExitGUI();
+                return;
             }
         }
 
@@ -295,6 +405,23 @@ namespace ZhuozhengYuan
             }
 
             callback?.Invoke(option);
+        }
+
+        private void CloseDirectionChoice()
+        {
+            if (!_isDirectionChoiceOpen)
+            {
+                return;
+            }
+
+            _isDirectionChoiceOpen = false;
+            _directionSelectedCallback = null;
+            _directionOptions = null;
+
+            if (gameManager != null)
+            {
+                gameManager.SetDirectionChoiceActive(false);
+            }
         }
 
         private void EnsureStyles()

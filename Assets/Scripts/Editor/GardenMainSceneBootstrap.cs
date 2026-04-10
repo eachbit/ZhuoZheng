@@ -11,6 +11,12 @@ namespace ZhuozhengYuan.EditorTools
     public static class GardenMainSceneBootstrap
     {
         private const string ScenePath = "Assets/Scenes/Garden_Main.unity";
+        private const string CoreRootName = "_00_Core";
+        private const string WorldRootName = "_10_World";
+        private const string StoryRootName = "_20_Story";
+        private const string ChaptersRootName = "_30_Chapters";
+        private const string Chapter01GameplayRootName = "_31_Chapter01_Gameplay";
+        private const string Chapter01VisualsRootName = "_32_Chapter01_Visuals";
 
         [MenuItem("Tools/Zhuozhengyuan/Create Garden_Main Starter Scene")]
         public static void CreateGardenMainStarterScene()
@@ -35,7 +41,32 @@ namespace ZhuozhengYuan.EditorTools
                 sceneBounds = new Bounds(Vector3.zero, new Vector3(200f, 10f, 200f));
             }
 
+            GameObject coreRoot = new GameObject(CoreRootName);
+            GameObject worldRoot = new GameObject(WorldRootName);
+            GameObject storyRoot = new GameObject(StoryRootName);
+            GameObject chaptersRoot = new GameObject(ChaptersRootName);
+            GameObject chapter01GameplayRoot = new GameObject(Chapter01GameplayRootName);
+            GameObject chapter01VisualsRoot = new GameObject(Chapter01VisualsRootName);
+            chapter01GameplayRoot.transform.SetParent(chaptersRoot.transform, false);
+            chapter01VisualsRoot.transform.SetParent(chaptersRoot.transform, false);
+            coreRoot.transform.SetSiblingIndex(0);
+            worldRoot.transform.SetSiblingIndex(1);
+            storyRoot.transform.SetSiblingIndex(2);
+            chaptersRoot.transform.SetSiblingIndex(3);
+
+            if (gardenModel != null)
+            {
+                gardenModel.transform.SetParent(worldRoot.transform, true);
+            }
+
+            GameObject directionalLight = GameObject.Find("Directional Light");
+            if (directionalLight != null)
+            {
+                directionalLight.transform.SetParent(worldRoot.transform, true);
+            }
+
             GameObject managerRoot = new GameObject("GardenGame");
+            managerRoot.transform.SetParent(coreRoot.transform, false);
             PrototypeRuntimeUI runtimeUI = managerRoot.AddComponent<PrototypeRuntimeUI>();
             GardenGameManager gameManager = managerRoot.AddComponent<GardenGameManager>();
             GardenModelHiddenCollisionBuilder collisionBuilder = managerRoot.AddComponent<GardenModelHiddenCollisionBuilder>();
@@ -43,19 +74,24 @@ namespace ZhuozhengYuan.EditorTools
             Chapter01Director chapterDirector = managerRoot.AddComponent<Chapter01Director>();
 
             GameObject playerRoot = CreatePlayer(playerVisual, sceneBounds);
+            playerRoot.transform.SetParent(coreRoot.transform, true);
             FirstPersonPlayerController playerController = playerRoot.GetComponent<FirstPersonPlayerController>();
             PlayerInteractor interactor = playerRoot.GetComponent<PlayerInteractor>();
 
             GameObject environmentRoot = new GameObject("Chapter01Environment");
+            environmentRoot.transform.SetParent(chapter01VisualsRoot.transform, false);
             Chapter01EnvironmentController environmentController = environmentRoot.AddComponent<Chapter01EnvironmentController>();
 
             GameObject walkableGroundRoot = new GameObject("WalkableGroundRoot");
+            walkableGroundRoot.transform.SetParent(worldRoot.transform, false);
             CreateGlobalInvisibleGround(walkableGroundRoot.transform, sceneBounds);
 
             GameObject blockerRoot = new GameObject("InvisibleBlockerRoot");
             blockerRoot.transform.position = sceneBounds.center;
+            blockerRoot.transform.SetParent(worldRoot.transform, true);
 
             GameObject referencesRoot = new GameObject("ReferencePoints");
+            referencesRoot.transform.SetParent(storyRoot.transform, false);
             Transform playerIntroPose = CreateMarker(referencesRoot.transform, "PlayerIntroPose", sceneBounds.center + new Vector3(0f, 1.8f, -8f));
             Transform playerPostIntroPose = CreateMarker(referencesRoot.transform, "PlayerPostIntroPose", sceneBounds.center + new Vector3(0f, 1.8f, -4f));
             Transform gardenerEntrance = CreateMarker(referencesRoot.transform, "OldGardenerEntrance", sceneBounds.center + new Vector3(2f, 0f, -7f));
@@ -63,9 +99,11 @@ namespace ZhuozhengYuan.EditorTools
             Transform gardenerExit = CreateMarker(referencesRoot.transform, "OldGardenerExit", sceneBounds.center + new Vector3(6f, 0f, -2f));
 
             GameObject oldGardener = CreateOldGardenerActor(gardenerEntrance.position, oldGardenerPrefab);
+            oldGardener.transform.SetParent(storyRoot.transform, true);
 
             GameObject chapterMarkers = new GameObject("Chapter01Markers");
             chapterMarkers.transform.position = sceneBounds.center;
+            chapterMarkers.transform.SetParent(chapter01GameplayRoot.transform, true);
             GateInteractable leftGate = CreateGate(chapterMarkers.transform, "LeftGateInteractable", sceneBounds.center + new Vector3(-4f, 0.5f, 4f), GateId.Left);
             GateInteractable rightGate = CreateGate(chapterMarkers.transform, "RightGateInteractable", sceneBounds.center + new Vector3(4f, 0.5f, 4f), GateId.Right);
             WaterDirectionInteractable flowSelector = CreateFlowSelector(chapterMarkers.transform, "FlowSelectorInteractable", sceneBounds.center + new Vector3(0f, 0.5f, 8f));
@@ -114,7 +152,7 @@ namespace ZhuozhengYuan.EditorTools
 
             EditorUtility.DisplayDialog(
                 "Garden_Main created",
-                "A starter scene, global invisible ground, placeholder player, placeholder elder, and chapter one interaction markers were created.\n\nNext, manually adjust positions, add InvisibleBlockerRoot blockers, bind water effects, and move the chapter markers to the real chapter one locations.",
+                "A starter scene with shared Core/World/Story roots and Chapter01 Gameplay/Visuals roots was created.\n\nNext, manually adjust positions, add InvisibleBlockerRoot blockers, bind water effects, and move the Chapter01 markers to the real chapter one locations.",
                 "OK");
         }
 
