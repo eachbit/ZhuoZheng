@@ -1,11 +1,13 @@
 using System.Collections;
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ZhuozhengYuan
 {
     public class Chapter01EnvironmentController : MonoBehaviour
     {
+        private const string FlowCenterRootName = "FlowCenterVisuals";
         private static readonly int TrailBaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int TrailAccentColorId = Shader.PropertyToID("_AccentColor");
         private static readonly int TrailAlphaScaleId = Shader.PropertyToID("_AlphaScale");
@@ -18,6 +20,7 @@ namespace ZhuozhengYuan
         public GameObject[] westPreviewObjects;
         public GameObject[] southPreviewObjects;
         public GameObject[] flowingObjects;
+        public bool showRejectedPreviewObjects;
         public GameObject[] pageRevealObjects;
         public GameObject[] pageRevealAccentObjects;
         public GameObject[] leftGateCalibrationObjects;
@@ -63,6 +66,7 @@ namespace ZhuozhengYuan
 
         public void SetDormant()
         {
+            ResolveSceneBindingsIfNeeded();
             ClearRuntimeFeedback();
             _currentPreviewDirection = string.Empty;
             SetObjectsActive(leftGateCalibrationObjects, false);
@@ -87,6 +91,7 @@ namespace ZhuozhengYuan
 
         public void SetDirectionPreview(string direction)
         {
+            ResolveSceneBindingsIfNeeded();
             ClearRuntimeFeedback();
             _currentPreviewDirection = Chapter01FlowDirection.Normalize(direction);
 
@@ -102,11 +107,12 @@ namespace ZhuozhengYuan
             bool isWest = string.Equals(_currentPreviewDirection, Chapter01FlowDirection.West, StringComparison.Ordinal);
             bool isSouth = string.Equals(_currentPreviewDirection, Chapter01FlowDirection.South, StringComparison.Ordinal);
 
-            SetObjectsActive(westPreviewObjects, isWest);
-            SetObjectsActive(southPreviewObjects, isSouth);
-            SetBehavioursEnabled(behavioursEnabledWhenSouthPreview, isSouth);
+            bool showRejectedPreview = showRejectedPreviewObjects;
+            SetObjectsActive(westPreviewObjects, showRejectedPreview && isWest);
+            SetObjectsActive(southPreviewObjects, showRejectedPreview && isSouth);
+            SetBehavioursEnabled(behavioursEnabledWhenSouthPreview, showRejectedPreview && isSouth);
 
-            if (isSouth)
+            if (showRejectedPreview && isSouth)
             {
                 PlayParticles(particlesPlayWhenSouthPreview);
             }
@@ -120,6 +126,7 @@ namespace ZhuozhengYuan
 
         public void SetFlowingSolved()
         {
+            ResolveSceneBindingsIfNeeded();
             ClearRuntimeFeedback();
             _currentPreviewDirection = Chapter01FlowDirection.Center;
             SetObjectsActive(leftGateCalibrationObjects, false);
@@ -158,6 +165,7 @@ namespace ZhuozhengYuan
 
         public void OnPageRevealed()
         {
+            ResolveSceneBindingsIfNeeded();
             SetObjectsActive(pageRevealAccentObjects, true);
             ShowPage();
         }
@@ -182,12 +190,26 @@ namespace ZhuozhengYuan
 
         public void ShowPage()
         {
+            ResolveSceneBindingsIfNeeded();
             SetObjectsActive(pageRevealObjects, true);
         }
 
         public void HidePage()
         {
+            ResolveSceneBindingsIfNeeded();
             SetObjectsActive(pageRevealObjects, false);
+        }
+
+        private void ResolveSceneBindingsIfNeeded()
+        {
+            if ((flowingObjects == null || flowingObjects.Length == 0) && gameObject.scene.IsValid())
+            {
+                GameObject centerFlowRoot = FindSceneObject(gameObject.scene, FlowCenterRootName);
+                if (centerFlowRoot != null)
+                {
+                    flowingObjects = new[] { centerFlowRoot };
+                }
+            }
         }
 
         private IEnumerator PlayDirectionSelectionFeedbackRoutine(string direction, bool isCorrect, Vector3 sourcePosition, Vector3 targetPosition)
@@ -775,6 +797,36 @@ namespace ZhuozhengYuan
                     gameObjects[index].SetActive(active);
                 }
             }
+        }
+
+        private static GameObject FindSceneObject(Scene scene, string objectName)
+        {
+            if (!scene.IsValid() || string.IsNullOrEmpty(objectName))
+            {
+                return null;
+            }
+
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+            {
+                GameObject root = roots[rootIndex];
+                if (root.name == objectName)
+                {
+                    return root;
+                }
+
+                Transform[] children = root.GetComponentsInChildren<Transform>(true);
+                for (int childIndex = 0; childIndex < children.Length; childIndex++)
+                {
+                    Transform child = children[childIndex];
+                    if (child != null && child.name == objectName)
+                    {
+                        return child.gameObject;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static void SetBehavioursEnabled(Behaviour[] behaviours, bool enabled)

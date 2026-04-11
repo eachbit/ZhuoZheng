@@ -9,7 +9,7 @@ namespace ZhuozhengYuan
 
         public GardenGameManager gameManager;
         public Camera playerCamera;
-        public PlayerViewModeController viewModeController;
+        public StarterAssetsThirdPersonBridge viewModeController;
         public float interactDistance = 6f;
         public float interactSphereRadius = 0.75f;
         public bool enableNearbyFallback = true;
@@ -30,7 +30,7 @@ namespace ZhuozhengYuan
 
             if (viewModeController == null)
             {
-                viewModeController = GetComponent<PlayerViewModeController>();
+                viewModeController = GetComponent<StarterAssetsThirdPersonBridge>();
             }
 
             if (playerCamera == null)

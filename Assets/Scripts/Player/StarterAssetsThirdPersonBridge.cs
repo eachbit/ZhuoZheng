@@ -9,9 +9,7 @@ namespace ZhuozhengYuan
     [DisallowMultipleComponent]
     public class StarterAssetsThirdPersonBridge : MonoBehaviour
     {
-        public FirstPersonPlayerController playerController;
         public PlayerInteractor playerInteractor;
-        public Transform cameraPivot;
         public Camera gameplayCamera;
         public Transform playerVisualRoot;
         public ThirdPersonController thirdPersonController;
@@ -20,20 +18,8 @@ namespace ZhuozhengYuan
         public Transform cinemachineCameraTarget;
         public CinemachineVirtualCamera followVirtualCamera;
         public bool startInThirdPerson = true;
-        public bool forcePresentationCameraRig = true;
-        public Vector3 presentationShoulderOffset = new Vector3(0f, 0.35f, 0f);
-        public float presentationVerticalArmLength = 0.45f;
-        public float presentationCameraSide = 0.5f;
-        public float presentationCameraDistance = 6.5f;
-        public float presentationCameraRadius = 0.18f;
-        public Vector3 presentationDamping = new Vector3(0.15f, 0.2f, 0.18f);
-
         private bool _movementLocked;
         private bool _controlLocked;
-        private Transform _originalCameraParent;
-        private Vector3 _originalCameraLocalPosition;
-        private Quaternion _originalCameraLocalRotation = Quaternion.identity;
-        private Vector3 _originalCameraLocalScale = Vector3.one;
 
         public bool IsConfigured
         {
@@ -57,61 +43,24 @@ namespace ZhuozhengYuan
         {
             get
             {
-                if (thirdPersonController != null)
-                {
-                    return thirdPersonController.GetComponent<CharacterController>();
-                }
-
-                return playerController != null ? playerController.characterController : GetComponent<CharacterController>();
+                return thirdPersonController != null
+                    ? thirdPersonController.GetComponent<CharacterController>()
+                    : GetComponent<CharacterController>();
             }
         }
 
         private void Awake()
         {
             AutoResolveReferences();
-            if (playerController == null)
-            {
-                playerController = GetComponent<FirstPersonPlayerController>();
-            }
-
-            if (playerInteractor == null)
-            {
-                playerInteractor = GetComponent<PlayerInteractor>();
-            }
-
-            if (cameraPivot == null && playerController != null)
-            {
-                cameraPivot = playerController.cameraPivot;
-            }
-
-            if (gameplayCamera == null && cameraPivot != null)
-            {
-                gameplayCamera = cameraPivot.GetComponentInChildren<Camera>(true);
-            }
-
-            if (thirdPersonController == null)
-            {
-                thirdPersonController = GetComponent<ThirdPersonController>();
-            }
-
-            if (starterAssetsInputs == null)
-            {
-                starterAssetsInputs = GetComponent<StarterAssetsInputs>();
-            }
-
-            if (playerInput == null)
-            {
-                playerInput = GetComponent<PlayerInput>();
-            }
-
-            CacheOriginalCameraPose();
+            EnsureCinemachineBrain();
             EnsureVirtualCameraTargets();
-            SetThirdPersonComponentsEnabled(false);
+            SetThirdPersonComponentsEnabled(startInThirdPerson);
         }
 
         private void Update()
         {
             AutoResolveReferences();
+            EnsureCinemachineBrain();
             EnsureVirtualCameraTargets();
 
             if (!IsConfigured)
@@ -135,6 +84,7 @@ namespace ZhuozhengYuan
         public void SetThirdPersonActive(bool active, bool immediate)
         {
             AutoResolveReferences();
+            EnsureCinemachineBrain();
             EnsureVirtualCameraTargets();
 
             if (!IsConfigured)
@@ -145,45 +95,6 @@ namespace ZhuozhengYuan
             }
 
             SetThirdPersonComponentsEnabled(active);
-
-            if (gameplayCamera == null)
-            {
-                return;
-            }
-
-            if (active)
-            {
-                EnsureCinemachineBrain();
-                SyncThirdPersonTargetToCurrentView();
-
-                if (gameplayCamera.transform.parent != null)
-                {
-                    gameplayCamera.transform.SetParent(null, true);
-                }
-
-                if (immediate && cinemachineCameraTarget != null)
-                {
-                    gameplayCamera.transform.position = cinemachineCameraTarget.position;
-                    gameplayCamera.transform.rotation = cinemachineCameraTarget.rotation;
-                }
-            }
-            else
-            {
-                SyncFirstPersonViewToThirdPersonTarget();
-
-                if (cameraPivot != null)
-                {
-                    gameplayCamera.transform.SetParent(cameraPivot, false);
-                }
-                else if (_originalCameraParent != null)
-                {
-                    gameplayCamera.transform.SetParent(_originalCameraParent, false);
-                }
-
-                gameplayCamera.transform.localPosition = _originalCameraLocalPosition;
-                gameplayCamera.transform.localRotation = _originalCameraLocalRotation;
-                gameplayCamera.transform.localScale = _originalCameraLocalScale;
-            }
         }
 
         public void SetMovementLocked(bool locked)
@@ -232,25 +143,24 @@ namespace ZhuozhengYuan
             }
         }
 
-        private void CacheOriginalCameraPose()
+        public void SnapToPose(Transform pose)
         {
-            if (gameplayCamera == null)
+            if (pose == null)
             {
                 return;
             }
 
-            _originalCameraParent = gameplayCamera.transform.parent;
-            if (cameraPivot != null && gameplayCamera.transform.parent != cameraPivot)
+            SnapToPose(pose.position, pose.rotation);
+        }
+
+        public void SnapViewToPose(Transform pose)
+        {
+            if (pose == null)
             {
-                _originalCameraLocalPosition = Vector3.zero;
-                _originalCameraLocalRotation = Quaternion.identity;
-                _originalCameraLocalScale = Vector3.one;
                 return;
             }
 
-            _originalCameraLocalPosition = gameplayCamera.transform.localPosition;
-            _originalCameraLocalRotation = gameplayCamera.transform.localRotation;
-            _originalCameraLocalScale = gameplayCamera.transform.localScale;
+            SnapToPose(pose.position, pose.rotation);
         }
 
         private void EnsureCinemachineBrain()
@@ -268,24 +178,14 @@ namespace ZhuozhengYuan
 
         private void AutoResolveReferences()
         {
-            if (playerController == null)
-            {
-                playerController = GetComponent<FirstPersonPlayerController>();
-            }
-
             if (playerInteractor == null)
             {
                 playerInteractor = GetComponent<PlayerInteractor>();
             }
 
-            if (cameraPivot == null && playerController != null)
+            if (gameplayCamera == null)
             {
-                cameraPivot = playerController.cameraPivot;
-            }
-
-            if (gameplayCamera == null && cameraPivot != null)
-            {
-                gameplayCamera = cameraPivot.GetComponentInChildren<Camera>(true);
+                gameplayCamera = Camera.main;
             }
 
             if (thirdPersonController == null)
@@ -348,49 +248,6 @@ namespace ZhuozhengYuan
                 followVirtualCamera.LookAt = cinemachineCameraTarget;
             }
 
-            if (!forcePresentationCameraRig)
-            {
-                return;
-            }
-
-            Cinemachine3rdPersonFollow thirdPersonFollow = followVirtualCamera.GetCinemachineComponent<Cinemachine3rdPersonFollow>();
-            if (thirdPersonFollow == null)
-            {
-                return;
-            }
-
-            thirdPersonFollow.ShoulderOffset = presentationShoulderOffset;
-            thirdPersonFollow.VerticalArmLength = presentationVerticalArmLength;
-            thirdPersonFollow.CameraSide = presentationCameraSide;
-            thirdPersonFollow.CameraDistance = presentationCameraDistance;
-            thirdPersonFollow.CameraRadius = presentationCameraRadius;
-            thirdPersonFollow.Damping = presentationDamping;
-        }
-
-        private void SyncThirdPersonTargetToCurrentView()
-        {
-            if (cinemachineCameraTarget == null)
-            {
-                return;
-            }
-
-            if (cameraPivot != null)
-            {
-                cinemachineCameraTarget.rotation = cameraPivot.rotation;
-                return;
-            }
-
-            cinemachineCameraTarget.rotation = transform.rotation;
-        }
-
-        private void SyncFirstPersonViewToThirdPersonTarget()
-        {
-            if (playerController == null || cinemachineCameraTarget == null)
-            {
-                return;
-            }
-
-            playerController.SnapToPose(transform.position, cinemachineCameraTarget.rotation);
         }
 
         private void SetThirdPersonComponentsEnabled(bool active)

@@ -29,8 +29,8 @@ namespace ZhuozhengYuan
         private static readonly RaycastHit[] RouteRaycastBuffer = new RaycastHit[64];
         private static readonly Collider[] RouteOverlapBuffer = new Collider[32];
 
-        public FirstPersonPlayerController playerController;
-        public PlayerViewModeController playerViewModeController;
+        public StarterAssetsThirdPersonBridge playerController;
+        public StarterAssetsThirdPersonBridge playerViewModeController;
         public PlayerInteractor playerInteractor;
         public PrototypeRuntimeUI runtimeUI;
         public IntroSequenceController introController;
@@ -339,25 +339,23 @@ namespace ZhuozhengYuan
         {
             if (playerController == null)
             {
+                playerController = FindObjectOfType<StarterAssetsThirdPersonBridge>();
+            }
+
+            if (playerController == null)
+            {
                 return;
             }
 
-            if (playerViewModeController == null)
-            {
-                playerViewModeController = playerController.GetComponent<PlayerViewModeController>();
-            }
-
-            if (playerViewModeController == null)
-            {
-                playerViewModeController = playerController.gameObject.AddComponent<PlayerViewModeController>();
-            }
-
-            playerViewModeController.playerController = playerController;
-            playerViewModeController.playerInteractor = playerInteractor;
+            playerViewModeController = playerController;
 
             if (playerInteractor != null)
             {
                 playerInteractor.viewModeController = playerViewModeController;
+                if (playerInteractor.playerCamera == null)
+                {
+                    playerInteractor.playerCamera = playerController.ActiveCamera;
+                }
             }
         }
 
@@ -996,11 +994,11 @@ namespace ZhuozhengYuan
 
         private bool HasRouteHeadroom(Vector3 groundPoint, Collider groundCollider)
         {
-            float controllerRadius = playerController != null && playerController.characterController != null
-                ? playerController.characterController.radius
+            float controllerRadius = playerController != null && playerController.ActiveCharacterController != null
+                ? playerController.ActiveCharacterController.radius
                 : chapter01RouteHeadroomRadius;
-            float controllerHeight = playerController != null && playerController.characterController != null
-                ? playerController.characterController.height
+            float controllerHeight = playerController != null && playerController.ActiveCharacterController != null
+                ? playerController.ActiveCharacterController.height
                 : chapter01RouteHeadroomHeight;
 
             float radius = Mathf.Max(0.2f, Mathf.Min(chapter01RouteHeadroomRadius, controllerRadius));
@@ -1531,7 +1529,7 @@ namespace ZhuozhengYuan
 
             if (controller == null && playerController != null)
             {
-                controller = playerController.characterController;
+                controller = playerController.ActiveCharacterController;
             }
 
             if (controller == null)
