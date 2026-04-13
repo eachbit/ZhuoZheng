@@ -35,6 +35,7 @@ namespace ZhuozhengYuan
         public PrototypeRuntimeUI runtimeUI;
         public IntroSequenceController introController;
         public Chapter01Director chapter01Director;
+        public Chapter02Director chapter02Director;
         public Chapter01AuthoredRouteGuide chapter01RouteGuide;
         public GardenModelHiddenCollisionBuilder hiddenCollisionBuilder;
         public bool createStartAreaGroundIfNeeded = true;
@@ -98,6 +99,7 @@ namespace ZhuozhengYuan
                 return !_introActive
                     && !_dialogueActive
                     && !_directionChoiceActive
+                    && !_chapter02QuizActive
                     && (chapter01Director == null || !chapter01Director.HasActiveGatePuzzle);
             }
         }
@@ -105,6 +107,8 @@ namespace ZhuozhengYuan
         private bool _introActive;
         private bool _dialogueActive;
         private bool _directionChoiceActive;
+        private bool _chapter02QuizActive;
+        private IChapter02QuizPresenter _chapter02QuizPresenter;
         private bool _chapter01RouteResolved;
         private List<Vector3> _chapter01ResolvedRoutePath;
         private Transform _chapter01ResolvedLeftGate;
@@ -132,6 +136,8 @@ namespace ZhuozhengYuan
                 runtimeUI.SetFadeAlpha(ShouldPlayIntroOnStart() ? 1f : 0f);
             }
 
+            _chapter02QuizPresenter = ResolveChapter02QuizPresenter();
+
             if (playerInteractor != null)
             {
                 playerInteractor.gameManager = this;
@@ -153,6 +159,16 @@ namespace ZhuozhengYuan
             if (chapter01Director != null)
             {
                 chapter01Director.Initialize(this, CurrentSaveData);
+            }
+
+            if (chapter02Director == null)
+            {
+                chapter02Director = FindObjectOfType<Chapter02Director>();
+            }
+
+            if (chapter02Director != null)
+            {
+                chapter02Director.Initialize(this, CurrentSaveData);
             }
 
             EnsureChapter01RouteGuide();
@@ -201,6 +217,11 @@ namespace ZhuozhengYuan
             }
         }
 
+        public void SetChapter02Objective(string objective)
+        {
+            SetObjective(objective);
+        }
+
         public void ShowToast(string message, float duration = 2.2f)
         {
             if (runtimeUI != null)
@@ -229,6 +250,35 @@ namespace ZhuozhengYuan
             }
 
             runtimeUI.ShowDirectionChoice(options, onSelected);
+        }
+
+        public void ShowChapter02Quiz(string title, string progressText, string questionText, string[] options, Action<int> onSelected)
+        {
+            if (_chapter02QuizPresenter == null)
+            {
+                _chapter02QuizPresenter = ResolveChapter02QuizPresenter();
+            }
+
+            if (_chapter02QuizPresenter == null)
+            {
+                Debug.LogWarning("GardenGameManager.ShowChapter02Quiz was called without a Chapter02 quiz presenter.");
+                return;
+            }
+
+            _chapter02QuizPresenter.ShowChapter02Quiz(title, progressText, questionText, options, onSelected);
+        }
+
+        public void HideChapter02Quiz()
+        {
+            if (_chapter02QuizPresenter == null)
+            {
+                _chapter02QuizPresenter = ResolveChapter02QuizPresenter();
+            }
+
+            if (_chapter02QuizPresenter != null)
+            {
+                _chapter02QuizPresenter.HideChapter02Quiz();
+            }
         }
 
         public void AddCollectedPages(int amount)
@@ -266,6 +316,11 @@ namespace ZhuozhengYuan
             {
                 chapter01Director.OnIntroFinished();
             }
+
+            if (chapter02Director != null)
+            {
+                chapter02Director.OnIntroFinished();
+            }
         }
 
         public void SetDialogueActive(bool isActive)
@@ -277,6 +332,12 @@ namespace ZhuozhengYuan
         public void SetDirectionChoiceActive(bool isActive)
         {
             _directionChoiceActive = isActive;
+            RefreshPlayerRuntimeState();
+        }
+
+        public void SetChapter02QuizActive(bool isActive)
+        {
+            _chapter02QuizActive = isActive;
             RefreshPlayerRuntimeState();
         }
 
@@ -319,7 +380,7 @@ namespace ZhuozhengYuan
 
         private void RefreshPlayerRuntimeState()
         {
-            bool gameplayAllowed = !_introActive && !_dialogueActive && !_directionChoiceActive;
+            bool gameplayAllowed = !_introActive && !_dialogueActive && !_directionChoiceActive && !_chapter02QuizActive;
 
             if (playerViewModeController != null)
             {
@@ -357,6 +418,25 @@ namespace ZhuozhengYuan
                     playerInteractor.playerCamera = playerController.ActiveCamera;
                 }
             }
+        }
+
+        private IChapter02QuizPresenter ResolveChapter02QuizPresenter()
+        {
+            if (runtimeUI is IChapter02QuizPresenter runtimeQuizPresenter)
+            {
+                return runtimeQuizPresenter;
+            }
+
+            MonoBehaviour[] behaviours = FindObjectsOfType<MonoBehaviour>(true);
+            for (int index = 0; index < behaviours.Length; index++)
+            {
+                if (behaviours[index] is IChapter02QuizPresenter presenter)
+                {
+                    return presenter;
+                }
+            }
+
+            return null;
         }
 
         private void EnsureChapter01RouteGuide()
