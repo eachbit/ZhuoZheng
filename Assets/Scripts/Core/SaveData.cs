@@ -13,6 +13,9 @@ namespace ZhuozhengYuan
         public string selectedFlowDirection = string.Empty;
         public int chapter01RejectedFlowDirections;
         public bool chapter01PageCollected;
+        public Chapter02State chapter02State = Chapter02State.NotStarted;
+        public int chapter02AnsweredCorrectCount;
+        public string[] chapter02QuestionOrder = Array.Empty<string>();
 
         public static SaveData CreateDefault()
         {
@@ -25,7 +28,10 @@ namespace ZhuozhengYuan
                 rightGateOpened = false,
                 selectedFlowDirection = string.Empty,
                 chapter01RejectedFlowDirections = 0,
-                chapter01PageCollected = false
+                chapter01PageCollected = false,
+                chapter02State = Chapter02State.NotStarted,
+                chapter02AnsweredCorrectCount = 0,
+                chapter02QuestionOrder = Array.Empty<string>()
             };
         }
     }

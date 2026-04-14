@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ZhuozhengYuan
 {
-    public class PrototypeRuntimeUI : MonoBehaviour
+    public class PrototypeRuntimeUI : MonoBehaviour, IChapter02QuizPresenter
     {
         public GardenGameManager gameManager;
         public int totalPages = 5;
@@ -30,6 +30,12 @@ namespace ZhuozhengYuan
         private bool _isDirectionChoiceOpen;
         private string[] _directionOptions;
         private Action<string> _directionSelectedCallback;
+        private bool _isChapter02QuizOpen;
+        private string _chapter02QuizTitle = string.Empty;
+        private string _chapter02QuizProgressText = string.Empty;
+        private string _chapter02QuizQuestionText = string.Empty;
+        private string[] _chapter02QuizOptions;
+        private Action<int> _chapter02QuizSelectedCallback;
 
         private GUIStyle _titleStyle;
         private GUIStyle _bodyStyle;
@@ -135,6 +141,38 @@ namespace ZhuozhengYuan
             }
         }
 
+        public void ShowChapter02Quiz(string title, string progressText, string questionText, string[] options, Action<int> onSelected)
+        {
+            _chapter02QuizTitle = title ?? string.Empty;
+            _chapter02QuizProgressText = progressText ?? string.Empty;
+            _chapter02QuizQuestionText = questionText ?? string.Empty;
+            _chapter02QuizOptions = options ?? Array.Empty<string>();
+            _chapter02QuizSelectedCallback = onSelected;
+            _isChapter02QuizOpen = true;
+
+            if (gameManager != null)
+            {
+                gameManager.SetChapter02QuizActive(true);
+            }
+        }
+
+        public void HideChapter02Quiz()
+        {
+            if (!_isChapter02QuizOpen)
+            {
+                return;
+            }
+
+            _isChapter02QuizOpen = false;
+            _chapter02QuizSelectedCallback = null;
+            _chapter02QuizOptions = null;
+
+            if (gameManager != null)
+            {
+                gameManager.SetChapter02QuizActive(false);
+            }
+        }
+
         private void Update()
         {
             if (IsDialogueOpen && Input.GetKeyDown(KeyCode.Space))
@@ -161,6 +199,26 @@ namespace ZhuozhengYuan
                     CloseDirectionChoice();
                 }
             }
+
+            if (_isChapter02QuizOpen)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    ChooseChapter02QuizOption(0);
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    ChooseChapter02QuizOption(1);
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha3))
+                {
+                    ChooseChapter02QuizOption(2);
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha4))
+                {
+                    ChooseChapter02QuizOption(3);
+                }
+            }
         }
 
         private void OnGUI()
@@ -177,6 +235,11 @@ namespace ZhuozhengYuan
             if (_isDirectionChoiceOpen)
             {
                 DrawDirectionChoice();
+            }
+
+            if (_isChapter02QuizOpen)
+            {
+                DrawChapter02Quiz();
             }
 
             DrawFadeOverlay();
@@ -213,7 +276,7 @@ namespace ZhuozhengYuan
 
         private void DrawInteractionPrompt()
         {
-            if (string.IsNullOrEmpty(_interactionPrompt) || IsDialogueOpen || _isDirectionChoiceOpen)
+            if (string.IsNullOrEmpty(_interactionPrompt) || IsDialogueOpen || _isDirectionChoiceOpen || _isChapter02QuizOpen)
             {
                 return;
             }
@@ -336,6 +399,34 @@ namespace ZhuozhengYuan
             }
         }
 
+        private void DrawChapter02Quiz()
+        {
+            if (!_isChapter02QuizOpen)
+            {
+                return;
+            }
+
+            string[] options = _chapter02QuizOptions ?? Array.Empty<string>();
+            Rect rect = new Rect((Screen.width - 520f) * 0.5f, (Screen.height - 340f) * 0.5f, 520f, 340f);
+            GUI.Box(rect, string.Empty);
+            GUI.Label(new Rect(rect.x + 20f, rect.y + 16f, rect.width - 40f, 28f), _chapter02QuizTitle, _titleStyle);
+            GUI.Label(new Rect(rect.x + 20f, rect.y + 48f, rect.width - 40f, 24f), _chapter02QuizProgressText, _smallStyle);
+            GUI.Label(new Rect(rect.x + 20f, rect.y + 80f, rect.width - 40f, 68f), _chapter02QuizQuestionText, _bodyStyle);
+
+            for (int index = 0; index < options.Length; index++)
+            {
+                string option = options[index];
+                if (GUI.Button(new Rect(rect.x + 26f, rect.y + 156f + index * 42f, rect.width - 52f, 32f), (index + 1) + ". " + option, _buttonStyle))
+                {
+                    ChooseChapter02QuizOption(index);
+                    GUIUtility.ExitGUI();
+                    return;
+                }
+            }
+
+            GUI.Label(new Rect(rect.x + 20f, rect.y + rect.height - 30f, rect.width - 40f, 20f), "\u6309 1/2/3/4 \u9009\u62e9\u7b54\u6848", _smallStyle);
+        }
+
         private void DrawFadeOverlay()
         {
             if (_fadeAlpha <= 0.001f)
@@ -422,6 +513,27 @@ namespace ZhuozhengYuan
             {
                 gameManager.SetDirectionChoiceActive(false);
             }
+        }
+
+        private void ChooseChapter02QuizOption(int index)
+        {
+            if (!_isChapter02QuizOpen || _chapter02QuizOptions == null || index < 0 || index >= _chapter02QuizOptions.Length)
+            {
+                return;
+            }
+
+            _isChapter02QuizOpen = false;
+
+            Action<int> callback = _chapter02QuizSelectedCallback;
+            _chapter02QuizSelectedCallback = null;
+            _chapter02QuizOptions = null;
+
+            if (gameManager != null)
+            {
+                gameManager.SetChapter02QuizActive(false);
+            }
+
+            callback?.Invoke(index);
         }
 
         private void EnsureStyles()
