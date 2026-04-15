@@ -555,12 +555,22 @@ public class Chat : MonoBehaviour
     // 显示当前行
     void ShowCurrentLine()
     {
-        if (currentStage >= stages.Length) return;
+        // 严格边界检查：防止索引越界
+        if (currentStage < 0 || currentStage >= stages.Length)
+        {
+            Debug.LogWarning($"⚠️ currentStage 越界: {currentStage}，有效范围 0-{stages.Length - 1}");
+            EndDialogue();
+            return;
+        }
         
         DialogueStage stage = stages[currentStage];
-        if (currentLineIndex >= stage.lines.Length)
+        
+        // 检查当前行索引是否有效
+        if (currentLineIndex < 0 || currentLineIndex >= stage.lines.Length)
         {
-            // 当前阶段结束
+            Debug.LogWarning($"⚠️ currentLineIndex 越界: {currentLineIndex}，有效范围 0-{stage.lines.Length - 1}");
+            
+            // 当前阶段结束，处理阶段转换
             if (stage.hasChoices)
             {
                 ShowChoices();
@@ -575,7 +585,14 @@ public class Chat : MonoBehaviour
             }
             else
             {
-                // 进入下一阶段
+                // 进入下一阶段前，检查 nextStage 是否有效
+                if (stage.nextStage < 0 || stage.nextStage >= stages.Length)
+                {
+                    Debug.LogWarning($"⚠️ nextStage 无效: {stage.nextStage}，结束对话");
+                    EndDialogue();
+                    return;
+                }
+                
                 currentStage = stage.nextStage;
                 currentLineIndex = 0;
                 ShowCurrentLine();
@@ -590,11 +607,40 @@ public class Chat : MonoBehaviour
         {
             ShowSystemPrompt(line.text);
             currentLineIndex++;
+            
+            // 递增后再次检查边界
+            if (currentLineIndex >= stage.lines.Length)
+            {
+                Debug.Log("📢 系统提示后阶段结束");
+                // 递归调用处理阶段结束逻辑
+                ShowCurrentLine();
+            }
             return;
         }
         
         // 显示对话
-        speakerNameText.text = line.speaker;
+        // 根据记忆规范：若无需显示说话者名字，应隐藏UI组件，严禁设置为空字符串
+        if (string.IsNullOrEmpty(line.speaker))
+        {
+            // 说话者为空，隐藏名字文本
+            if (speakerNameText != null && speakerNameText.gameObject.activeSelf)
+            {
+                speakerNameText.gameObject.SetActive(false);
+            }
+        }
+        else
+        {
+            // 说话者不为空，显示并设置名字
+            if (speakerNameText != null)
+            {
+                if (!speakerNameText.gameObject.activeSelf)
+                {
+                    speakerNameText.gameObject.SetActive(true);
+                }
+                speakerNameText.text = line.speaker;
+            }
+        }
+        
         currentFullText = line.text;
         
         // 打字机效果
