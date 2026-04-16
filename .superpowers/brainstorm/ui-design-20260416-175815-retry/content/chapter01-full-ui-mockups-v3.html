@@ -1,0 +1,429 @@
+<style>
+  :root {
+    --bg: #141516;
+    --text: #f3ead7;
+    --muted: #d0c6b3;
+  }
+  .intro {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+    margin-bottom: 24px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(213, 190, 140, 0.45);
+    color: #f0ddb4;
+    background: rgba(72, 55, 30, 0.42);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .intro p {
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .recommend {
+    border-radius: 24px;
+    padding: 22px;
+    background:
+      radial-gradient(circle at top left, rgba(130, 102, 52, 0.18), transparent 36%),
+      linear-gradient(180deg, rgba(20, 29, 23, 0.98), rgba(12, 17, 14, 0.98));
+    border: 1px solid rgba(213, 194, 150, 0.16);
+  }
+  .recommend h3 {
+    margin-top: 0;
+    color: #f2e6c7;
+  }
+  .recommend ul {
+    margin: 0;
+    padding-left: 18px;
+    line-height: 1.9;
+    color: #dfd5c5;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+  }
+  .option {
+    display: block;
+    overflow: hidden;
+    border-radius: 24px;
+    border: 1px solid rgba(219, 202, 165, 0.12);
+    background: linear-gradient(180deg, rgba(19, 20, 18, 0.98), rgba(13, 14, 12, 0.98));
+  }
+  .option .frame {
+    padding: 14px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0)),
+      linear-gradient(135deg, rgba(122, 94, 60, 0.18), rgba(30, 39, 31, 0.08));
+  }
+  .option .meta {
+    padding: 16px 18px 20px;
+  }
+  .pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    color: #eddcb4;
+    border: 1px solid rgba(225, 201, 147, 0.18);
+    background: rgba(151, 115, 63, 0.14);
+  }
+  .pill.rec {
+    color: #bde0a8;
+    border-color: rgba(189, 224, 168, 0.28);
+    background: rgba(88, 121, 67, 0.18);
+  }
+  .meta p {
+    color: #d2c8b6;
+    line-height: 1.75;
+    margin-bottom: 0;
+  }
+  .mock {
+    position: relative;
+    height: 610px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .scene {
+    position: absolute;
+    inset: 0;
+  }
+  .scene::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(178, 205, 218, 0.26), rgba(22, 27, 24, 0.12) 40%, rgba(11, 13, 12, 0.16)),
+      radial-gradient(circle at 78% 16%, rgba(248, 220, 162, 0.12), transparent 16%),
+      radial-gradient(circle at 18% 85%, rgba(94, 126, 90, 0.18), transparent 22%);
+  }
+  .water, .bridge, .roof, .mountain {
+    position: absolute;
+  }
+  .water {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 34%;
+    background:
+      linear-gradient(180deg, rgba(115, 167, 176, 0.72), rgba(45, 72, 76, 0.86)),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.05) 8px, transparent 8px, transparent 22px);
+  }
+  .bridge {
+    left: 11%;
+    right: 9%;
+    bottom: 22%;
+    height: 20%;
+    border-radius: 18px 18px 0 0;
+    background:
+      linear-gradient(180deg, rgba(113, 69, 44, 0.95), rgba(59, 35, 24, 0.95));
+    clip-path: polygon(0 76%, 14% 52%, 31% 28%, 50% 17%, 69% 28%, 86% 52%, 100% 76%, 100% 100%, 0 100%);
+    opacity: 0.92;
+  }
+  .bridge::before {
+    content: "";
+    position: absolute;
+    left: 7%;
+    right: 7%;
+    top: 32%;
+    height: 12%;
+    border-radius: 999px;
+    background: rgba(234, 211, 167, 0.18);
+  }
+  .roof {
+    width: 38%;
+    height: 18%;
+    left: 9%;
+    top: 15%;
+    background:
+      linear-gradient(180deg, rgba(65, 73, 82, 0.92), rgba(35, 38, 42, 0.96));
+    clip-path: polygon(0 76%, 18% 28%, 82% 28%, 100% 76%, 84% 82%, 16% 82%);
+    opacity: 0.92;
+  }
+  .roof.r2 {
+    left: auto;
+    right: 8%;
+    top: 20%;
+    width: 30%;
+    height: 14%;
+  }
+  .mountain {
+    right: 6%;
+    bottom: 24%;
+    width: 22%;
+    height: 26%;
+    background:
+      linear-gradient(180deg, rgba(105, 101, 96, 0.86), rgba(49, 47, 45, 0.96));
+    clip-path: polygon(16% 100%, 0 66%, 22% 36%, 43% 0, 64% 34%, 100% 56%, 84% 100%);
+    opacity: 0.8;
+  }
+  .panel {
+    position: absolute;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+  }
+  .paper .panel {
+    background: rgba(245, 236, 214, 0.95);
+    box-shadow: inset 0 0 0 1px rgba(120, 92, 58, 0.22), 0 12px 28px rgba(0,0,0,0.12);
+  }
+  .plaque .panel {
+    background: rgba(19, 31, 24, 0.88);
+    box-shadow: inset 0 0 0 1px rgba(223, 195, 136, 0.2), 0 12px 28px rgba(0,0,0,0.2);
+  }
+  .stage .panel {
+    background: rgba(75, 48, 31, 0.88);
+    box-shadow: inset 0 0 0 1px rgba(237, 196, 112, 0.18), 0 12px 28px rgba(0,0,0,0.22);
+  }
+  .counter { left: 18px; top: 18px; width: 148px; height: 52px; }
+  .objective { left: 18px; top: 82px; width: 250px; height: 82px; }
+  .toast { left: 50%; transform: translateX(-50%); top: 18px; width: 300px; height: 54px; }
+  .choice { left: 50%; top: 46%; transform: translate(-50%, -50%); width: 72%; height: 198px; }
+  .gate { right: 18px; top: 120px; width: 188px; height: 236px; }
+  .dialog { left: 18px; right: 18px; bottom: 18px; height: 118px; }
+  .prompt { left: 50%; bottom: 148px; transform: translateX(-50%); width: 210px; height: 46px; }
+  .titlebar, .line, .button, .chip, .ring, .needle {
+    position: absolute;
+    border-radius: 999px;
+  }
+  .paper .titlebar, .paper .line, .paper .button, .paper .chip, .paper .ring, .paper .needle {
+    background: rgba(112, 81, 44, 0.2);
+  }
+  .plaque .titlebar, .plaque .line, .plaque .button, .plaque .chip, .plaque .ring, .plaque .needle {
+    background: rgba(236, 215, 172, 0.18);
+  }
+  .stage .titlebar, .stage .line, .stage .button, .stage .chip, .stage .ring, .stage .needle {
+    background: rgba(248, 224, 173, 0.15);
+  }
+  .titlebar { left: 16px; top: 12px; height: 16px; }
+  .line { left: 16px; height: 9px; }
+  .button { height: 28px; }
+  .chip { height: 22px; }
+  .ring {
+    width: 94px;
+    height: 94px;
+    right: 18px;
+    bottom: 20px;
+    border-radius: 50%;
+    background: transparent !important;
+  }
+  .paper .ring { border: 6px solid rgba(112, 81, 44, 0.22); }
+  .plaque .ring { border: 6px solid rgba(236, 215, 172, 0.2); }
+  .stage .ring { border: 6px solid rgba(248, 224, 173, 0.18); }
+  .needle {
+    width: 48px;
+    height: 6px;
+    right: 41px;
+    bottom: 63px;
+    transform-origin: right center;
+    transform: rotate(-28deg);
+  }
+  .paper .needle { background: rgba(148, 103, 48, 0.4); }
+  .plaque .needle { background: rgba(238, 204, 133, 0.36); }
+  .stage .needle { background: rgba(250, 201, 104, 0.34); }
+  .footer {
+    margin-top: 22px;
+    color: #d8cebb;
+    line-height: 1.85;
+  }
+  @media (max-width: 1200px) {
+    .intro { grid-template-columns: 1fr; }
+    .gallery { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="intro">
+  <div>
+    <div class="badge">Chapter 01 / 完整效果图</div>
+    <h2>第一章全部 UI 成品感效果图</h2>
+    <p class="subtitle">这次不是抽象草图，而是把第一章整套 UI 同时放进一个完整画面里。你可以直接看它在游戏场景上的感觉。</p>
+    <p>每张图里都包含：残页计数、目标栏、交互提示、水流选择框、结果提示、暗闸校准面板、底部对话框。你现在就按“像不像正式游戏界面”来选，不用考虑实现细节。</p>
+  </div>
+  <div class="recommend">
+    <h3>推荐方向</h3>
+    <ul>
+      <li><strong>推荐 B：园林匾额 + 墨底金边</strong></li>
+      <li>信息最清楚，成品感最强</li>
+      <li>既有拙政园气质，又不像临时 UI</li>
+      <li>后面继续细化图标、纹样、动画都最好接</li>
+    </ul>
+  </div>
+</div>
+
+<div class="gallery">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="frame">
+      <div class="mock paper">
+        <div class="scene"></div>
+        <div class="water"></div>
+        <div class="bridge"></div>
+        <div class="roof"></div>
+        <div class="roof r2"></div>
+        <div class="mountain"></div>
+
+        <div class="panel counter">
+          <div class="titlebar" style="width:38%;"></div>
+          <div class="chip" style="left:16px; bottom:12px; width:92px;"></div>
+        </div>
+        <div class="panel objective">
+          <div class="titlebar" style="width:28%;"></div>
+          <div class="line" style="top:38px; width:78%;"></div>
+          <div class="line" style="top:55px; width:62%;"></div>
+        </div>
+        <div class="panel toast">
+          <div class="titlebar" style="width:20%;"></div>
+          <div class="line" style="top:28px; width:68%;"></div>
+        </div>
+        <div class="panel choice">
+          <div class="titlebar" style="width:34%;"></div>
+          <div class="line" style="top:36px; width:48%;"></div>
+          <div class="button" style="left:16px; top:72px; width:80%;"></div>
+          <div class="button" style="left:16px; top:108px; width:72%;"></div>
+          <div class="button" style="left:16px; top:144px; width:76%;"></div>
+        </div>
+        <div class="panel gate">
+          <div class="titlebar" style="width:38%;"></div>
+          <div class="line" style="top:36px; width:56%;"></div>
+          <div class="ring"></div>
+          <div class="needle"></div>
+        </div>
+        <div class="panel prompt">
+          <div class="line" style="top:18px; width:72%;"></div>
+        </div>
+        <div class="panel dialog">
+          <div class="titlebar" style="width:18%;"></div>
+          <div class="line" style="top:42px; width:78%;"></div>
+          <div class="line" style="top:60px; width:66%;"></div>
+          <div class="button" style="right:18px; bottom:14px; width:82px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="pill">方案 A</div>
+      <h3>宣纸卷轴感</h3>
+      <p>最文气，像翻开园林册页。面板偏纸感、木框感、题签感，传统气质最浓。</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="frame">
+      <div class="mock plaque">
+        <div class="scene"></div>
+        <div class="water"></div>
+        <div class="bridge"></div>
+        <div class="roof"></div>
+        <div class="roof r2"></div>
+        <div class="mountain"></div>
+
+        <div class="panel counter">
+          <div class="titlebar" style="width:38%;"></div>
+          <div class="chip" style="left:16px; bottom:12px; width:94px;"></div>
+        </div>
+        <div class="panel objective">
+          <div class="titlebar" style="width:28%;"></div>
+          <div class="line" style="top:38px; width:80%;"></div>
+          <div class="line" style="top:55px; width:64%;"></div>
+        </div>
+        <div class="panel toast">
+          <div class="titlebar" style="width:22%;"></div>
+          <div class="line" style="top:28px; width:66%;"></div>
+        </div>
+        <div class="panel choice">
+          <div class="titlebar" style="width:36%;"></div>
+          <div class="line" style="top:36px; width:50%;"></div>
+          <div class="button" style="left:16px; top:72px; width:82%;"></div>
+          <div class="button" style="left:16px; top:108px; width:76%;"></div>
+          <div class="button" style="left:16px; top:144px; width:78%;"></div>
+        </div>
+        <div class="panel gate">
+          <div class="titlebar" style="width:38%;"></div>
+          <div class="line" style="top:36px; width:58%;"></div>
+          <div class="ring"></div>
+          <div class="needle" style="transform: rotate(14deg);"></div>
+        </div>
+        <div class="panel prompt">
+          <div class="line" style="top:18px; width:70%;"></div>
+        </div>
+        <div class="panel dialog">
+          <div class="titlebar" style="width:18%;"></div>
+          <div class="line" style="top:42px; width:80%;"></div>
+          <div class="line" style="top:60px; width:68%;"></div>
+          <div class="button" style="right:18px; bottom:14px; width:82px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="pill rec">方案 B / 推荐</div>
+      <h3>园林匾额 + 墨底金边</h3>
+      <p>最像正式游戏 UI。深墨底托住文字，暖金线提气质，最稳、最清楚，也最耐看。</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="frame">
+      <div class="mock stage">
+        <div class="scene"></div>
+        <div class="water"></div>
+        <div class="bridge"></div>
+        <div class="roof"></div>
+        <div class="roof r2"></div>
+        <div class="mountain"></div>
+
+        <div class="panel counter">
+          <div class="titlebar" style="width:40%;"></div>
+          <div class="chip" style="left:16px; bottom:12px; width:90px;"></div>
+        </div>
+        <div class="panel objective">
+          <div class="titlebar" style="width:30%;"></div>
+          <div class="line" style="top:38px; width:78%;"></div>
+          <div class="line" style="top:55px; width:60%;"></div>
+        </div>
+        <div class="panel toast">
+          <div class="titlebar" style="width:24%;"></div>
+          <div class="line" style="top:28px; width:64%;"></div>
+        </div>
+        <div class="panel choice">
+          <div class="titlebar" style="width:34%;"></div>
+          <div class="line" style="top:36px; width:48%;"></div>
+          <div class="button" style="left:16px; top:72px; width:78%;"></div>
+          <div class="button" style="left:16px; top:108px; width:70%;"></div>
+          <div class="button" style="left:16px; top:144px; width:74%;"></div>
+        </div>
+        <div class="panel gate">
+          <div class="titlebar" style="width:38%;"></div>
+          <div class="line" style="top:36px; width:54%;"></div>
+          <div class="ring"></div>
+          <div class="needle" style="transform: rotate(-56deg);"></div>
+        </div>
+        <div class="panel prompt">
+          <div class="line" style="top:18px; width:72%;"></div>
+        </div>
+        <div class="panel dialog">
+          <div class="titlebar" style="width:18%;"></div>
+          <div class="line" style="top:42px; width:76%;"></div>
+          <div class="line" style="top:60px; width:64%;"></div>
+          <div class="button" style="right:18px; bottom:14px; width:82px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="pill">方案 C</div>
+      <h3>戏台暖木感</h3>
+      <p>舞台感和章节感最强，暖木、灯影、金箔味更足，更有“演出感”和戏剧张力。</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  现在你直接选：<strong>A / B / C</strong>。<br>
+  如果你想混搭，也可以说：<strong>以 B 为主，借一点 A 的宣纸感</strong>。
+</div>

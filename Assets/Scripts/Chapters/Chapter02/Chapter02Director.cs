@@ -274,7 +274,24 @@ namespace ZhuozhengYuan
                 return;
             }
 
+            if (!ShouldShowReachTriggerObjective(manager.CurrentSaveData))
+            {
+                return;
+            }
+
             manager.SetChapter02Objective(objectiveReachTrigger);
+        }
+
+        private static bool ShouldShowReachTriggerObjective(SaveData saveData)
+        {
+            if (saveData == null)
+            {
+                return false;
+            }
+
+            return saveData.leftGateOpened
+                && saveData.rightGateOpened
+                && !string.IsNullOrWhiteSpace(saveData.selectedFlowDirection);
         }
 
         private void WriteBackSaveState()

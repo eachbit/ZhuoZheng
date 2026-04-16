@@ -54,6 +54,16 @@ namespace ZhuozhengYuan
             get { return useSuggestedTargetAngle ? GetSuggestedTargetAngle() : targetAngle; }
         }
 
+        public float MinValidAngle
+        {
+            get { return NormalizeAngle(ResolvedTargetAngle - Mathf.Abs(validAngleTolerance)); }
+        }
+
+        public float MaxValidAngle
+        {
+            get { return NormalizeAngle(ResolvedTargetAngle + Mathf.Abs(validAngleTolerance)); }
+        }
+
         private void Awake()
         {
             if (dialTransform == null)

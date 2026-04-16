@@ -1,0 +1,305 @@
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: 24px;
+    margin-bottom: 24px;
+    align-items: start;
+  }
+  .tag {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(219, 192, 136, 0.45);
+    color: #f1dfb2;
+    background: rgba(74, 57, 32, 0.42);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .hero p {
+    color: #d4ccbc;
+    line-height: 1.8;
+  }
+  .recommend {
+    border-radius: 24px;
+    padding: 22px;
+    background:
+      radial-gradient(circle at top left, rgba(126, 100, 51, 0.18), transparent 34%),
+      linear-gradient(180deg, rgba(21, 31, 24, 0.98), rgba(12, 17, 14, 0.98));
+    border: 1px solid rgba(214, 196, 157, 0.16);
+  }
+  .recommend h3 {
+    margin-top: 0;
+    color: #f3e7c7;
+  }
+  .recommend ul {
+    margin: 0;
+    padding-left: 18px;
+    line-height: 1.9;
+    color: #dfd6c7;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+  }
+  .card {
+    overflow: hidden;
+    border-radius: 24px;
+    border: 1px solid rgba(216, 198, 159, 0.12);
+    background: linear-gradient(180deg, rgba(20, 21, 18, 0.98), rgba(13, 14, 12, 0.98));
+  }
+  .card-image {
+    padding: 16px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0)),
+      linear-gradient(135deg, rgba(121, 94, 58, 0.18), rgba(32, 39, 31, 0.08));
+  }
+  .card-body {
+    padding: 18px 18px 20px;
+  }
+  .pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    color: #eadab1;
+    background: rgba(156, 118, 68, 0.14);
+    border: 1px solid rgba(219, 197, 150, 0.18);
+  }
+  .pill.rec {
+    color: #bce0aa;
+    background: rgba(86, 122, 67, 0.18);
+    border-color: rgba(188, 224, 170, 0.28);
+  }
+  .links {
+    margin-top: 14px;
+    display: grid;
+    gap: 10px;
+  }
+  .link-item {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 14px;
+    color: #efe6d4;
+    text-decoration: none;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(225, 209, 173, 0.1);
+  }
+  .link-item:hover {
+    background: rgba(255,255,255,0.07);
+  }
+  .mock {
+    position: relative;
+    height: 270px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .m1, .m2, .m3 {
+    position: absolute;
+    inset: 0;
+  }
+  .m1 {
+    background:
+      linear-gradient(180deg, rgba(35, 48, 39, 0.9), rgba(18, 22, 18, 0.98)),
+      radial-gradient(circle at top right, rgba(217, 198, 150, 0.18), transparent 28%);
+  }
+  .m2 {
+    background:
+      linear-gradient(180deg, rgba(27, 33, 28, 0.92), rgba(12, 15, 13, 0.98)),
+      radial-gradient(circle at top left, rgba(208, 169, 92, 0.2), transparent 26%);
+  }
+  .m3 {
+    background:
+      linear-gradient(180deg, rgba(53, 37, 26, 0.92), rgba(21, 16, 12, 0.98)),
+      radial-gradient(circle at center top, rgba(227, 184, 95, 0.2), transparent 30%);
+  }
+  .frame {
+    position: absolute;
+    inset: 18px;
+    border-radius: 18px;
+  }
+  .m1 .frame {
+    background: rgba(244, 236, 216, 0.92);
+    box-shadow:
+      inset 0 0 0 2px rgba(137, 104, 61, 0.24),
+      inset 0 0 0 10px rgba(210, 183, 133, 0.08);
+  }
+  .m2 .frame {
+    background: rgba(18, 30, 24, 0.88);
+    box-shadow:
+      inset 0 0 0 2px rgba(220, 194, 137, 0.22),
+      inset 0 0 0 10px rgba(220, 194, 137, 0.06);
+  }
+  .m3 .frame {
+    background: rgba(77, 49, 31, 0.88);
+    box-shadow:
+      inset 0 0 0 2px rgba(241, 200, 114, 0.2),
+      inset 0 0 0 10px rgba(241, 200, 114, 0.05);
+  }
+  .corner {
+    position: absolute;
+    width: 54px;
+    height: 54px;
+    border-radius: 12px;
+  }
+  .m1 .corner {
+    border: 2px solid rgba(137, 104, 61, 0.35);
+  }
+  .m2 .corner {
+    border: 2px solid rgba(220, 194, 137, 0.34);
+  }
+  .m3 .corner {
+    border: 2px solid rgba(241, 200, 114, 0.3);
+  }
+  .tl { left: 28px; top: 28px; border-right: none; border-bottom: none; }
+  .tr { right: 28px; top: 28px; border-left: none; border-bottom: none; }
+  .bl { left: 28px; bottom: 28px; border-right: none; border-top: none; }
+  .br { right: 28px; bottom: 28px; border-left: none; border-top: none; }
+  .titlebar, .divider, .chip {
+    position: absolute;
+    border-radius: 999px;
+  }
+  .titlebar { left: 44px; right: 44px; top: 44px; height: 18px; }
+  .divider { left: 54px; right: 54px; top: 84px; height: 8px; }
+  .chip { left: 60px; right: 60px; bottom: 46px; height: 28px; }
+  .m1 .titlebar, .m1 .divider, .m1 .chip { background: rgba(117, 87, 46, 0.2); }
+  .m2 .titlebar, .m2 .divider, .m2 .chip { background: rgba(232, 211, 170, 0.18); }
+  .m3 .titlebar, .m3 .divider, .m3 .chip { background: rgba(248, 222, 171, 0.16); }
+  .tradeoff {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(216, 198, 160, 0.12);
+    color: #d2c8b6;
+    line-height: 1.75;
+    font-size: 13px;
+  }
+  .footer {
+    margin-top: 22px;
+    color: #d7cebd;
+    line-height: 1.85;
+  }
+  @media (max-width: 1200px) {
+    .hero { grid-template-columns: 1fr; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="hero">
+  <div>
+    <div class="tag">Border Resources / 园林边框筛选</div>
+    <h2>第一章 UI 边框资源选择页</h2>
+    <p class="subtitle">这次不是效果图，而是帮你选“边框资源路线”。你先决定是走安全免费、效果优先，还是 Unity 包优先，我再基于这一条线做正式 UI。</p>
+    <p>每一套我都给你配了能直接点开的资源入口。你看完只要告诉我选 A / B / C 就行。</p>
+  </div>
+  <div class="recommend">
+    <h3>我的推荐</h3>
+    <ul>
+      <li><strong>推荐 A：免费可商用 + 自己组合</strong></li>
+      <li>最稳，不容易踩授权坑</li>
+      <li>适合你们自己做成“园林专属边框”</li>
+      <li>后面我可以直接帮你把这些素材组合成正式 UI 样式</li>
+    </ul>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mock">
+        <div class="m1"></div>
+        <div class="frame"></div>
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+        <div class="titlebar"></div>
+        <div class="divider"></div>
+        <div class="chip"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="pill rec">方案 A / 推荐</div>
+      <h3>免费可商用 + 自己组合</h3>
+      <p>用免费可商用的角花、回纹、云纹、边角纹样，自己拼出你们项目专属边框。最稳，最适合比赛项目。</p>
+      <div class="links">
+        <a class="link-item" href="https://www.svgrepo.com/svg/124156/chinese-ornament" target="_blank">SVG Repo: Chinese Ornament（CC0）</a>
+        <a class="link-item" href="https://www.svgrepo.com/svg/139288/chinese-decoration" target="_blank">SVG Repo: Chinese Decoration（CC0）</a>
+        <a class="link-item" href="https://pixabay.com/vectors/chinese-style-design-element-5915509/" target="_blank">Pixabay: Chinese Style Vector</a>
+      </div>
+      <div class="tradeoff">
+        优点：授权最安全，改色和拆件最方便。<br>
+        代价：需要我们自己重新组合，不是下载即成品。
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mock">
+        <div class="m2"></div>
+        <div class="frame"></div>
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+        <div class="titlebar"></div>
+        <div class="divider"></div>
+        <div class="chip"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="pill">方案 B</div>
+      <h3>效果优先 / 素材站现成边框</h3>
+      <p>直接找更完整、更华丽的现成边框或装饰框，速度快，视觉更“满”，适合想尽快出高级感。</p>
+      <div class="links">
+        <a class="link-item" href="https://www.freepik.com/free-vector/traditional-chinese-decorative-golden-frame_17127605.htm" target="_blank">Freepik: Decorative Golden Frame</a>
+        <a class="link-item" href="https://www.freepik.com/free-vector/gradient-chinese-border-frame-ornament_144645530.htm" target="_blank">Freepik: Border Frame Ornament</a>
+        <a class="link-item" href="https://pngtree.com/free-png-vectors/chinese-pattern" target="_blank">Pngtree: Chinese Pattern Resources</a>
+      </div>
+      <div class="tradeoff">
+        优点：出效果快，边框复杂度高。<br>
+        代价：授权要仔细看，免费版常常有限制或需要署名。
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mock">
+        <div class="m3"></div>
+        <div class="frame"></div>
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+        <div class="titlebar"></div>
+        <div class="divider"></div>
+        <div class="chip"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="pill">方案 C</div>
+      <h3>Unity 资源包 + 国风纹样叠加</h3>
+      <p>先用 Unity Asset Store 里成熟的 GUI 包打底，再叠加国风角花和题签，做成你们项目自己的新中式边框。</p>
+      <div class="links">
+        <a class="link-item" href="https://assetstore.unity.com/packages/2d/gui/icons/gold-fantasy-ui-set-pack-115073" target="_blank">Unity Asset Store: Gold Fantasy UI Set Pack</a>
+        <a class="link-item" href="https://assetstore.unity.com/packages/2d/gui/dark-fantasy-gui-ui-kit-68828" target="_blank">Unity Asset Store: Dark Fantasy GUI / UI Kit</a>
+        <a class="link-item" href="https://assetstore.unity.com/packages/2d/gui/icons/awesome-game-ui-pack-12-195480" target="_blank">Unity Asset Store: Awesome Game UI Pack 12</a>
+      </div>
+      <div class="tradeoff">
+        优点：最适合直接进 Unity，控件最完整。<br>
+        代价：本身不是国风，需要后续二次改造才能更像拙政园。
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  你看完直接选：<strong>A / B / C</strong>。<br>
+  如果你想混搭，也可以说：<strong>以 A 为主，再借一点 C 的成品控件感</strong>。
+</div>

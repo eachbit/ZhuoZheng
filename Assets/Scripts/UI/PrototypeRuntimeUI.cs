@@ -4,10 +4,11 @@ using UnityEngine;
 
 namespace ZhuozhengYuan
 {
-    public class PrototypeRuntimeUI : MonoBehaviour, IChapter02QuizPresenter
+    public class PrototypeRuntimeUI : MonoBehaviour, IChapter01RuntimeUIPresenter, IChapter02QuizPresenter
     {
         public GardenGameManager gameManager;
         public int totalPages = 5;
+        public bool suppressChapter01Overlay;
 
         private string _interactionPrompt = string.Empty;
         private string _objectiveText = string.Empty;
@@ -141,6 +142,14 @@ namespace ZhuozhengYuan
             }
         }
 
+        public void ShowGateCalibration(Chapter01GateCalibrationViewData data)
+        {
+        }
+
+        public void HideGateCalibration()
+        {
+        }
+
         public void ShowChapter02Quiz(string title, string progressText, string questionText, string[] options, Action<int> onSelected)
         {
             _chapter02QuizTitle = title ?? string.Empty;
@@ -224,17 +233,20 @@ namespace ZhuozhengYuan
         private void OnGUI()
         {
             EnsureStyles();
-            DrawPageCounter();
-            DrawObjective();
-            DrawToast();
-            DrawDirectionFlash();
-            DrawDirectionResult();
-            DrawInteractionPrompt();
-            DrawDialogueBox();
-
-            if (_isDirectionChoiceOpen)
+            if (!suppressChapter01Overlay)
             {
-                DrawDirectionChoice();
+                DrawPageCounter();
+                DrawObjective();
+                DrawToast();
+                DrawDirectionFlash();
+                DrawDirectionResult();
+                DrawInteractionPrompt();
+                DrawDialogueBox();
+
+                if (_isDirectionChoiceOpen)
+                {
+                    DrawDirectionChoice();
+                }
             }
 
             if (_isChapter02QuizOpen)
@@ -242,7 +254,10 @@ namespace ZhuozhengYuan
                 DrawChapter02Quiz();
             }
 
-            DrawFadeOverlay();
+            if (!suppressChapter01Overlay)
+            {
+                DrawFadeOverlay();
+            }
         }
 
         private void DrawPageCounter()

@@ -1,0 +1,80 @@
+﻿<style>
+  .hero { display:grid; grid-template-columns:1.15fr 0.85fr; gap:24px; align-items:start; margin-bottom:24px; }
+  .hero-copy { padding:8px 0 0; }
+  .hero-copy p { line-height:1.7; color:#d8d2c4; }
+  .tag { display:inline-block; padding:6px 12px; border-radius:999px; border:1px solid rgba(209,179,116,.45); color:#f1dfb2; background:rgba(60,49,33,.55); font-size:12px; letter-spacing:.12em; text-transform:uppercase; margin-bottom:12px; }
+  .summary-card { border-radius:24px; padding:22px; background:radial-gradient(circle at top left, rgba(166,117,63,.18), transparent 34%), linear-gradient(180deg, rgba(25,34,27,.96), rgba(13,17,14,.96)); border:1px solid rgba(205,184,137,.16); box-shadow:0 24px 48px rgba(0,0,0,.28); }
+  .summary-card h3 { margin-top:0; color:#f3e6c5; }
+  .summary-card ul { margin:0; padding-left:18px; color:#ddd4c3; line-height:1.8; }
+  .cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+  .card { overflow:hidden; border-radius:24px; background:linear-gradient(180deg, rgba(21,24,20,.98), rgba(15,16,14,.98)); border:1px solid rgba(204,183,143,.14); }
+  .card-image { padding:18px; background:linear-gradient(135deg, rgba(113,83,49,.2), rgba(28,38,30,.1)), linear-gradient(180deg, rgba(244,234,203,.06), rgba(0,0,0,0)); }
+  .card-body { padding:18px 18px 20px; }
+  .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; color:#ebddb4; background:rgba(160,123,71,.16); border:1px solid rgba(214,190,141,.18); margin-bottom:10px; }
+  .rec { color:#b3d79f; border-color:rgba(179,215,159,.35); background:rgba(83,120,63,.18); }
+  .tradeoff { margin-top:12px; padding-top:12px; border-top:1px solid rgba(213,198,166,.1); color:#cfc4ae; line-height:1.65; font-size:13px; }
+  .mock-screen { height:330px; border-radius:18px; position:relative; overflow:hidden; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+  .mock-a { background:linear-gradient(180deg, rgba(35,50,39,.82), rgba(18,24,20,.96)), radial-gradient(circle at top right, rgba(221,200,148,.16), transparent 28%); }
+  .mock-b { background:linear-gradient(180deg, rgba(31,39,34,.84), rgba(14,17,15,.98)), radial-gradient(circle at top left, rgba(208,169,99,.18), transparent 26%); }
+  .mock-c { background:linear-gradient(180deg, rgba(48,35,25,.86), rgba(20,15,11,.98)), radial-gradient(circle at center top, rgba(224,182,99,.18), transparent 30%); }
+  .hud-box,.dialog-box,.choice-box,.gate-box { position:absolute; border-radius:16px; backdrop-filter:blur(4px); }
+  .hud-box { left:18px; top:16px; width:148px; height:46px; }
+  .hud-box::before { content:""; position:absolute; inset:0; border-radius:16px; border:1px solid rgba(235,220,177,.22); }
+  .dialog-box { left:18px; right:18px; bottom:18px; height:92px; }
+  .choice-box { left:50%; top:58%; transform:translate(-50%,-50%); width:74%; height:144px; }
+  .gate-box { right:18px; top:92px; width:146px; height:170px; }
+  .ink { position:absolute; inset:0; opacity:.6; }
+  .mock-a .hud-box,.mock-a .dialog-box,.mock-a .choice-box,.mock-a .gate-box { background:rgba(242,231,205,.9); box-shadow:inset 0 0 0 1px rgba(109,84,52,.22); }
+  .mock-a .ink { background:linear-gradient(90deg, rgba(86,61,40,.08), transparent 30%), repeating-linear-gradient(180deg, rgba(83,62,38,.04), rgba(83,62,38,.04) 2px, transparent 2px, transparent 5px); }
+  .mock-b .hud-box,.mock-b .dialog-box,.mock-b .choice-box,.mock-b .gate-box { background:rgba(18,31,24,.82); box-shadow:inset 0 0 0 1px rgba(217,190,129,.18), 0 12px 24px rgba(0,0,0,.18); }
+  .mock-b .ink { background:linear-gradient(90deg, rgba(202,171,108,.08), transparent 36%), linear-gradient(180deg, rgba(255,255,255,.04), transparent 28%); }
+  .mock-c .hud-box,.mock-c .dialog-box,.mock-c .choice-box,.mock-c .gate-box { background:rgba(67,43,29,.82); box-shadow:inset 0 0 0 1px rgba(230,190,111,.22); }
+  .mock-c .ink { background:radial-gradient(circle at top, rgba(255,226,162,.18), transparent 35%), linear-gradient(180deg, rgba(122,67,35,.12), transparent 50%); }
+  .orn { position:absolute; border:1px solid rgba(225,208,167,.18); border-radius:14px; }
+  .orn.top { left:10px; right:10px; top:10px; height:32px; }
+  .orn.mid { left:16px; right:16px; top:18px; height:18px; }
+  .orn.bottom { left:12px; right:12px; bottom:12px; height:22px; }
+  .line { position:absolute; left:18px; right:18px; height:8px; border-radius:999px; opacity:.72; }
+  .mock-a .line { background:rgba(98,76,50,.18); }
+  .mock-b .line { background:rgba(228,206,154,.14); }
+  .mock-c .line { background:rgba(248,219,159,.16); }
+  .line.l1 { top:20px; width:42%; }
+  .line.l2 { top:38px; width:56%; }
+  .line.l3 { top:62px; width:68%; }
+  .line.l4 { top:86px; width:52%; }
+  .line.l5 { top:110px; width:78%; }
+  .footer { margin-top:24px; color:#d5ccbc; line-height:1.8; }
+  @media (max-width:1100px){ .hero{grid-template-columns:1fr;} .cards{grid-template-columns:1fr;} }
+</style>
+<div class="hero">
+  <div class="hero-copy">
+    <div class="tag">Chapter 01 UI / 园林正式版</div>
+    <h2>第一章整套 UI 方向草图</h2>
+    <p class="subtitle">已按你选的“传统园林感”来收束：覆盖目标栏、交互提示、对话框、水流选择、结果提示、暗闸校准界面。</p>
+    <p>我给你放了三套方向，不是纯换皮，而是连信息层级和玩家读屏节奏一起考虑了。你只要先选一套主方向，我后面就能继续把它落到 Unity 里的正式 UI 结构上。</p>
+  </div>
+  <div class="summary-card">
+    <h3>我的推荐</h3>
+    <ul>
+      <li>优先推荐 <strong>方案 B：园林匾额 + 墨底金边</strong></li>
+      <li>原因：最像游戏正式 UI，读字清楚，夜景/雨景里也稳</li>
+      <li>适合后续继续加动画、章节标题、图标与特效</li>
+      <li>也最方便你同学后面继续替换美术细节，不容易推翻重来</li>
+    </ul>
+  </div>
+</div>
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="mock-screen mock-a"><div class="ink"></div><div class="hud-box"><div class="orn top"></div></div><div class="choice-box"><div class="orn mid"></div><div class="line l3"></div><div class="line l4"></div><div class="line l5"></div></div><div class="dialog-box"><div class="orn bottom"></div><div class="line l1"></div><div class="line l2"></div></div><div class="gate-box"><div class="line l1"></div><div class="line l3"></div><div class="line l5"></div></div></div></div>
+    <div class="card-body"><div class="pill">方案 A</div><h3>宣纸卷轴感</h3><p>米白宣纸面板、木纹边框、题签式标题。气质最传统，像在翻园林志册。</p><div class="tradeoff">优点：国风味最足，和拙政园主题天然贴合。<br>代价：如果场景背景偏亮，阅读对比度需要额外精修。</div></div>
+  </div>
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="mock-screen mock-b"><div class="ink"></div><div class="hud-box"><div class="orn top"></div></div><div class="choice-box"><div class="orn mid"></div><div class="line l2"></div><div class="line l3"></div><div class="line l4"></div><div class="line l5"></div></div><div class="dialog-box"><div class="orn bottom"></div><div class="line l1"></div><div class="line l2"></div></div><div class="gate-box"><div class="line l1"></div><div class="line l2"></div><div class="line l4"></div></div></div></div>
+    <div class="card-body"><div class="pill rec">方案 B / 推荐</div><h3>园林匾额 + 墨底金边</h3><p>深墨底、暖金线、青绿点缀，像夜游园林里被灯光照亮的匾额与窗棂。</p><div class="tradeoff">优点：最平衡，既有园林气质又有游戏正式感，信息层级最好做。<br>代价：比纯宣纸方案少一点“文物感”，但更适合长期项目。</div></div>
+  </div>
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="mock-screen mock-c"><div class="ink"></div><div class="hud-box"><div class="orn top"></div></div><div class="choice-box"><div class="orn mid"></div><div class="line l2"></div><div class="line l4"></div><div class="line l5"></div></div><div class="dialog-box"><div class="orn bottom"></div><div class="line l1"></div><div class="line l3"></div></div><div class="gate-box"><div class="line l2"></div><div class="line l3"></div><div class="line l5"></div></div></div></div>
+    <div class="card-body"><div class="pill">方案 C</div><h3>戏台暖木感</h3><p>暖棕木色、金箔边、灯影层次更重，像园中戏台或廊下陈设，戏剧性最强。</p><div class="tradeoff">优点：记忆点强，章节感会很浓。<br>代价：更偏“戏剧舞台”，如果用太满会压过真实场景本身。</div></div>
+  </div>
+</div>
+<div class="footer">打开后你只要先告诉我选 <strong>A / B / C</strong>，或者说“以 B 为主，混一点 A 的宣纸感”也可以。<br>我拿到这个方向后，就继续把第一章正式 UI 的结构设计讲给你听，再等你确认进入实现。</div>

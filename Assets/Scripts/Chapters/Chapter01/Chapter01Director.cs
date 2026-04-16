@@ -167,6 +167,8 @@ namespace ZhuozhengYuan
             {
                 environmentController.OnGateCalibrationStarted(gateInteractable.gateId);
             }
+
+            UpdateGateCalibrationUI();
         }
 
         public string GetFlowInteractionPrompt(string label)
@@ -210,14 +212,7 @@ namespace ZhuozhengYuan
                 return;
             }
 
-            if (manager.runtimeUI != null)
-            {
-                manager.ShowDirectionChoice(GetDirectionOptionsForUi(), OnDirectionOptionSelected);
-                return;
-            }
-
-            string nextDirection = SelectNextDirection();
-            OnDirectionSelected(nextDirection);
+            manager.ShowDirectionChoice(GetDirectionOptionsForUi(), OnDirectionOptionSelected);
         }
 
         public void HandlePagePickup(PagePickupInteractable pickupInteractable)
@@ -259,6 +254,7 @@ namespace ZhuozhengYuan
             {
                 float delta = rotationInput * Mathf.Max(5f, _activeGatePuzzle.rotateSpeed) * Time.deltaTime;
                 _activeGatePuzzle.AdjustCalibration(delta);
+                UpdateGateCalibrationUI();
             }
 
             if (Input.GetKeyDown(gateCancelKey))
@@ -270,6 +266,12 @@ namespace ZhuozhengYuan
             if (Input.GetKeyDown(gateConfirmKey) && _activeGatePuzzle.IsWithinCalibrationTolerance())
             {
                 SolveGatePuzzle(_activeGatePuzzle);
+                return;
+            }
+
+            if (_activeGatePuzzle != null)
+            {
+                UpdateGateCalibrationUI();
             }
         }
 
@@ -291,6 +293,7 @@ namespace ZhuozhengYuan
 
             gateInteractable.ApplyOpenedState(true);
             _activeGatePuzzle = null;
+            manager?.HideGateCalibration();
 
             if (manager != null && manager.playerViewModeController != null)
             {
@@ -322,6 +325,8 @@ namespace ZhuozhengYuan
                 _activeGatePuzzle.EndPuzzleMode();
                 _activeGatePuzzle = null;
             }
+
+            manager?.HideGateCalibration();
 
             if (manager != null && manager.playerViewModeController != null)
             {
@@ -674,7 +679,7 @@ namespace ZhuozhengYuan
 
         private void ShowDirectionResultBanner(string direction, bool isCorrectDirection)
         {
-            if (manager == null || manager.runtimeUI == null)
+            if (manager == null)
             {
                 return;
             }
@@ -703,7 +708,52 @@ namespace ZhuozhengYuan
                 accentColor = new Color(0.56f, 0.92f, 0.66f, 1f);
             }
 
-            manager.runtimeUI.ShowDirectionResult(title, message, accentColor, 2.8f);
+            manager.ShowDirectionResult(title, message, accentColor, 2.8f);
+        }
+
+        private void UpdateGateCalibrationUI()
+        {
+            if (manager == null || _activeGatePuzzle == null)
+            {
+                return;
+            }
+
+            manager.ShowGateCalibration(new Chapter01GateCalibrationViewData
+            {
+                gateName = string.IsNullOrWhiteSpace(_activeGatePuzzle.gateDisplayName) ? "暗闸" : _activeGatePuzzle.gateDisplayName,
+                currentAngle = _activeGatePuzzle.CurrentAngle,
+                targetAngle = _activeGatePuzzle.ResolvedTargetAngle,
+                validAngleTolerance = _activeGatePuzzle.validAngleTolerance,
+                canConfirm = _activeGatePuzzle.IsWithinCalibrationTolerance(),
+                rotationHint = BuildGateRotationHint(_activeGatePuzzle),
+                negativeKey = gateRotateNegativeKey,
+                positiveKey = gateRotatePositiveKey,
+                confirmKey = gateConfirmKey,
+                cancelKey = gateCancelKey
+            });
+        }
+
+        private string BuildGateRotationHint(GateInteractable gateInteractable)
+        {
+            if (gateInteractable == null)
+            {
+                return string.Empty;
+            }
+
+            float delta = Mathf.DeltaAngle(gateInteractable.CurrentAngle, gateInteractable.ResolvedTargetAngle);
+            float tolerance = Mathf.Max(0.1f, gateInteractable.validAngleTolerance);
+
+            if (Mathf.Abs(delta) <= tolerance)
+            {
+                return "已经进入正确位置，请按 E 完成校准";
+            }
+
+            if (delta > 0f)
+            {
+                return "请继续向右旋转，靠近正确位置";
+            }
+
+            return "请继续向左旋转，靠近正确位置";
         }
     }
 }
