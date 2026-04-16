@@ -33,6 +33,7 @@ namespace ZhuozhengYuan
         public StarterAssetsThirdPersonBridge playerViewModeController;
         public PlayerInteractor playerInteractor;
         public PrototypeRuntimeUI runtimeUI;
+        public Chapter01CanvasUI chapter01CanvasUI;
         public IntroSequenceController introController;
         public Chapter01Director chapter01Director;
         public Chapter02Director chapter02Director;
@@ -108,6 +109,7 @@ namespace ZhuozhengYuan
         private bool _dialogueActive;
         private bool _directionChoiceActive;
         private bool _chapter02QuizActive;
+        private IChapter01RuntimeUIPresenter _chapter01Presenter;
         private IChapter02QuizPresenter _chapter02QuizPresenter;
         private bool _chapter01RouteResolved;
         private List<Vector3> _chapter01ResolvedRoutePath;
@@ -132,8 +134,21 @@ namespace ZhuozhengYuan
             if (runtimeUI != null)
             {
                 runtimeUI.gameManager = this;
-                runtimeUI.SetPageCount(CurrentSaveData.collectedPages, totalPages);
-                runtimeUI.SetFadeAlpha(ShouldPlayIntroOnStart() ? 1f : 0f);
+            }
+
+            _chapter01Presenter = ResolveChapter01Presenter();
+            if (chapter01CanvasUI != null)
+            {
+                chapter01CanvasUI.gameManager = this;
+            }
+            if (runtimeUI != null)
+            {
+                runtimeUI.suppressChapter01Overlay = _chapter01Presenter != null && !ReferenceEquals(_chapter01Presenter, runtimeUI);
+            }
+            if (_chapter01Presenter != null)
+            {
+                _chapter01Presenter.SetPageCount(CurrentSaveData.collectedPages, totalPages);
+                _chapter01Presenter.SetFadeAlpha(ShouldPlayIntroOnStart() ? 1f : 0f);
             }
 
             _chapter02QuizPresenter = ResolveChapter02QuizPresenter();
@@ -188,10 +203,7 @@ namespace ZhuozhengYuan
                 return;
             }
 
-            if (runtimeUI != null)
-            {
-                runtimeUI.SetFadeAlpha(0f);
-            }
+            _chapter01Presenter?.SetFadeAlpha(0f);
 
             if (introController != null)
             {
@@ -203,18 +215,12 @@ namespace ZhuozhengYuan
 
         public void SetInteractionPrompt(string prompt)
         {
-            if (runtimeUI != null)
-            {
-                runtimeUI.SetInteractionPrompt(prompt);
-            }
+            _chapter01Presenter?.SetInteractionPrompt(prompt);
         }
 
         public void SetObjective(string objective)
         {
-            if (runtimeUI != null)
-            {
-                runtimeUI.SetObjective(objective);
-            }
+            _chapter01Presenter?.SetObjective(objective);
         }
 
         public void SetChapter02Objective(string objective)
@@ -224,32 +230,34 @@ namespace ZhuozhengYuan
 
         public void ShowToast(string message, float duration = 2.2f)
         {
-            if (runtimeUI != null)
-            {
-                runtimeUI.ShowToast(message, duration);
-            }
+            _chapter01Presenter?.ShowToast(message, duration);
+        }
+
+        public void ShowDirectionResult(string title, string message, Color accentColor, float duration = 2.6f)
+        {
+            _chapter01Presenter?.ShowDirectionResult(title, message, accentColor, duration);
         }
 
         public void ShowDialogue(DialogueLine[] lines, Action onCompleted)
         {
-            if (runtimeUI == null)
+            if (_chapter01Presenter == null)
             {
                 onCompleted?.Invoke();
                 return;
             }
 
-            runtimeUI.ShowDialogue(lines, onCompleted);
+            _chapter01Presenter.ShowDialogue(lines, onCompleted);
         }
 
         public void ShowDirectionChoice(string[] options, Action<string> onSelected)
         {
-            if (runtimeUI == null)
+            if (_chapter01Presenter == null)
             {
                 onSelected?.Invoke(string.Empty);
                 return;
             }
 
-            runtimeUI.ShowDirectionChoice(options, onSelected);
+            _chapter01Presenter.ShowDirectionChoice(options, onSelected);
         }
 
         public void ShowChapter02Quiz(string title, string progressText, string questionText, string[] options, Action<int> onSelected)
@@ -281,14 +289,21 @@ namespace ZhuozhengYuan
             }
         }
 
+        public void ShowGateCalibration(Chapter01GateCalibrationViewData data)
+        {
+            _chapter01Presenter?.ShowGateCalibration(data);
+        }
+
+        public void HideGateCalibration()
+        {
+            _chapter01Presenter?.HideGateCalibration();
+        }
+
         public void AddCollectedPages(int amount)
         {
             CurrentSaveData.collectedPages = Mathf.Clamp(CurrentSaveData.collectedPages + amount, 0, totalPages);
 
-            if (runtimeUI != null)
-            {
-                runtimeUI.SetPageCount(CurrentSaveData.collectedPages, totalPages);
-            }
+            _chapter01Presenter?.SetPageCount(CurrentSaveData.collectedPages, totalPages);
         }
 
         public void MarkIntroPlayed()
@@ -367,8 +382,10 @@ namespace ZhuozhengYuan
 
             if (runtimeUI != null)
             {
-                runtimeUI.SetPageCount(CurrentSaveData.collectedPages, totalPages);
+                runtimeUI.gameManager = this;
             }
+
+            _chapter01Presenter?.SetPageCount(CurrentSaveData.collectedPages, totalPages);
 
             yield return null;
 
@@ -437,6 +454,23 @@ namespace ZhuozhengYuan
             }
 
             return null;
+        }
+
+        private IChapter01RuntimeUIPresenter ResolveChapter01Presenter()
+        {
+            if (chapter01CanvasUI == null)
+            {
+                chapter01CanvasUI = FindObjectOfType<Chapter01CanvasUI>(true);
+            }
+
+            if (chapter01CanvasUI == null)
+            {
+                chapter01CanvasUI = Chapter01CanvasUI.CreateDefault();
+            }
+
+            return chapter01CanvasUI != null
+                ? chapter01CanvasUI
+                : runtimeUI as IChapter01RuntimeUIPresenter;
         }
 
         private void EnsureChapter01RouteGuide()

@@ -1,259 +1,268 @@
-# Chapter01 Formal UI Design
+# 第一章正式 UI 设计文档
 
-Date: 2026-04-16
-Project: ZhuoZheng / Garden_Main
-Scope: Replace the current temporary Chapter01 runtime UI with a formal, art-directed UI that fits the selected visual direction.
+日期：2026-04-16  
+项目：ZhuoZheng / Garden_Main  
+范围：将当前第一章临时运行时 UI 替换为符合既定美术方向的正式 UI。
 
-## Goal
+## 一、目标
 
-Build the full Chapter01 UI in the existing `Garden_Main` scene without changing Chapter01 gameplay rules. The result should:
+在现有 `Garden_Main` 场景中完成第一章整套正式 UI，且**不改变第一章玩法规则**。最终结果需要满足：
 
-- replace the current temporary `OnGUI` presentation used by `PrototypeRuntimeUI`
-- preserve the existing Chapter01 flow, save behavior, and interaction rules
-- follow the approved visual direction: `园亭匾额 + 深墨金边`
-- be easy for a teammate to reskin later without rewriting gameplay logic
+- 替换当前由 `PrototypeRuntimeUI` 通过 `OnGUI` 绘制的临时 UI
+- 保留现有第一章流程、存档行为和交互规则
+- 遵循已经确定的视觉方向：`园亭匾额 + 深墨金边`
+- 便于后续同学继续替换美术外观，而不需要重写玩法逻辑
 
-This work is UI replacement and UI structure work, not a gameplay redesign. Chapter01 gate calibration, flow direction choice, page collection, dialogue, and toast logic stay functionally the same.
+这次工作属于 **UI 替换与 UI 结构重建**，不是玩法重做。  
+第一章的暗闸校准、水流方向选择、残页拾取、对话流程、提示弹条等玩法逻辑，功能上保持不变。
 
-## Current State
+## 二、当前现状
 
-The current project uses `PrototypeRuntimeUI` to draw temporary Chapter01 and Chapter02 UI through `OnGUI`. That temporary layer already exposes the gameplay-facing methods needed by `GardenGameManager` and `Chapter01Director`, including:
+当前项目通过 `PrototypeRuntimeUI` 使用 `OnGUI` 绘制第一章和第二章的临时界面。  
+这个临时层已经提供了第一章玩法所需的基础展示能力，主要包括：
 
-- page counter
-- objective text
-- toast/result banner
-- interaction prompt
-- dialogue box
-- direction choice panel
-- Chapter02 quiz panel
+- 残页计数
+- 目标文本
+- 顶部提示 / 结果提示
+- 交互提示
+- 对话框
+- 水流方向选择面板
+- 第二章答题面板
 
-Chapter01 gameplay flow is owned by `Chapter01Director`. That script already decides:
+第一章玩法流程由 `Chapter01Director` 主导。  
+它目前已经决定了以下内容：
 
-- when objectives change
-- when the player can calibrate gates
-- when the flow selection UI opens
-- what choice labels the player sees
-- when the result banner appears
-- when the page becomes available
+- 什么时候切换目标文本
+- 玩家什么时候可以开始校准暗闸
+- 什么时候打开水流选择界面
+- 水流选项显示什么文字
+- 什么时候显示结果提示
+- 什么时候允许拾取残页
 
-Because those rules are already stable, the formal UI should be introduced as a presentation layer that keeps the same external hooks where practical.
+因为这些规则已经比较稳定，所以正式 UI 应作为**表现层**接入，而不是再去改动第一章玩法判断。
 
-## Approved Visual Direction
+## 三、已确认的视觉方向
 
-Primary direction: `园亭匾额 + 深墨金边`
+主方向：`园亭匾额 + 深墨金边`
 
-Visual language:
+整体视觉语言如下：
 
-- deep ink-green panels instead of pure black
-- thin gold borders and restrained gold accents
-- plaque-like title bars inspired by pavilion signboards
-- cream-white text for readability
-- elegant title typography with clean body typography
-- no heavy western fantasy bevels
-- no bright neon or oversized decorative flourishes
+- 面板底色使用偏墨绿色的深色，而不是纯黑
+- 边框使用细金边，不做厚重描边和夸张浮雕
+- 标题区域带有园林匾额、题景框的感觉
+- 文本使用米白色，保证可读性
+- 标题要雅，正文要清楚
+- 不使用明显的西幻风厚重装饰
+- 不使用高饱和霓虹色或过量花纹
 
-Font system:
+字体系统已经统一为：
 
-- title / panel title: `SourceHanSerifSC-SemiBold.otf`
-- body / option / prompt: `SourceHanSansSC-Medium.otf`
-- count / highlight / key numbers: `SourceHanSansSC-Bold.otf`
+- 标题 / 面板标题：`SourceHanSerifSC-SemiBold.otf`
+- 正文 / 选项 / 提示：`SourceHanSansSC-Medium.otf`
+- 数字 / 强调信息：`SourceHanSansSC-Bold.otf`
 
-## UI Modules To Build
+## 四、第一章需要制作的 UI 模块
 
-All of the following belong to Chapter01 delivery:
+第一章正式 UI 这次一共包含以下 7 块：
 
-1. Page counter
-2. Objective bar
-3. Toast / result banner
-4. Interaction prompt
-5. Dialogue box
-6. Water direction choice panel
-7. Gate calibration panel
+1. 残页计数
+2. 目标栏
+3. 顶部提示 / 结果提示条
+4. 底部交互提示
+5. 对话框
+6. 水流方向选择面板
+7. 暗闸校准面板
 
-Chapter02 quiz UI is explicitly out of scope for this pass.
+第二章答题 UI 本次**不在范围内**。
 
-## Module Design
+## 五、各模块设计说明
 
-### 1. Page Counter
+### 1. 残页计数
 
-Purpose:
-Show current page progress in the upper-left corner.
+作用：  
+显示当前已经收集的残页数量。
 
-Visual treatment:
+表现形式：
 
-- compact dark panel
-- gold border
-- bold numeric emphasis
-- low visual noise
+- 放在左上角
+- 面板较小
+- 深墨底 + 金边
+- 数字重点突出
 
-Data:
+需要的数据：
 
-- current collected pages
-- total pages
+- 当前残页数
+- 总残页数
 
-Source:
+数据来源：
 
 - `PrototypeRuntimeUI.SetPageCount`
 
-### 2. Objective Bar
+### 2. 目标栏
 
-Purpose:
-Show the current Chapter01 goal in the upper-left area beneath the page counter.
+作用：  
+显示当前第一章主目标。
 
-Visual treatment:
+表现形式：
 
-- narrow plaque-like label or compact task board
-- serif title styling for the heading if used
-- sans body text
-- stable width so the layout does not jump excessively
+- 位于左上角，残页计数下方
+- 采用窄长牌匾式或简洁任务板式
+- 如有小标题可使用宋体
+- 正文使用黑体
+- 宽度尽量稳定，避免文本切换时界面跳动过大
 
-Data:
+需要的数据：
 
-- current objective string from `GardenGameManager.SetObjective`
+- 当前目标文本
 
-### 3. Toast / Result Banner
+数据来源：
 
-Purpose:
-Show short-lived feedback such as correct or incorrect water-flow outcomes.
+- `GardenGameManager.SetObjective`
 
-Visual treatment:
+### 3. 顶部提示 / 结果提示条
 
-- top-center banner
-- dark ink panel with thin gold border
-- accent color support for state changes
-- stronger hierarchy than the temporary implementation
+作用：  
+显示短时反馈，例如水流方向是否正确。
 
-Data:
+表现形式：
 
-- toast text
-- direction result title
-- direction result body
-- optional accent color
+- 位于顶部中间
+- 深墨面板 + 金边
+- 支持正确 / 错误状态下的颜色强调
+- 信息层级要明显强于临时版本
 
-Source:
+需要的数据：
+
+- 提示文字
+- 结果标题
+- 结果说明
+- 强调色
+
+数据来源：
 
 - `ShowToast`
 - `ShowDirectionResult`
 
-### 4. Interaction Prompt
+### 4. 底部交互提示
 
-Purpose:
-Show a small prompt when the player can interact and no modal UI is open.
+作用：  
+在玩家可交互时显示简短提示。
 
-Visual treatment:
+表现形式：
 
-- bottom-center compact panel
-- smaller than the dialogue box
-- subtle, readable, not dominant
+- 位于底部中间
+- 比对话框小很多
+- 样式克制，不能抢主画面
 
-Data:
+需要的数据：
 
-- current interaction prompt string
+- 当前交互提示文本
 
-Rule:
+显示规则：
 
-- hidden while dialogue, direction choice, gate puzzle panel, or Chapter02 quiz is open
+- 当对话、水流选择、暗闸校准、第二章答题等面板开启时隐藏
 
-### 5. Dialogue Box
+### 5. 对话框
 
-Purpose:
-Show guided story dialogue and narration.
+作用：  
+显示叙事对话和引导文字。
 
-Visual treatment:
+表现形式：
 
-- full-width lower panel
-- small name plaque above or integrated into the frame
-- serif speaker label
-- sans body copy
-- visible continue hint and continue button
+- 位于底部，宽版面板
+- 带小型人物名牌 / 题签结构
+- 说话人名字用宋体
+- 正文用黑体
+- 保留继续按钮和继续提示
 
-Data:
+需要的数据：
 
-- speaker name
-- dialogue body
-- continue action
+- 说话人名字
+- 对话正文
+- 继续回调
 
-Source:
+数据来源：
 
 - `ShowDialogue`
 - `AdvanceDialogue`
 
-### 6. Water Direction Choice Panel
+### 6. 水流方向选择面板
 
-Purpose:
-Serve as the main Chapter01 modal decision panel when the player chooses the water route.
+作用：  
+在玩家选择水流方向时作为第一章的核心模态面板。
 
-Visual treatment:
+表现形式：
 
-- center modal with strongest “formal game UI” finish
-- plaque title area
-- body text explaining the decision
-- clean numbered choices
-- clear keyboard hint support
+- 位于画面中央
+- 是整套 UI 中完成度最高、最正式的一块
+- 顶部有明显题签 / 匾额式标题区
+- 正文说明清楚
+- 选项按钮规整，带编号
+- 保留键盘数字快捷键提示
 
-Data:
+需要的数据：
 
-- title
-- option labels
-- current callbacks
+- 标题
+- 选项文本
+- 当前选择回调
 
-Behavior:
+行为要求：
 
-- preserves current numeric shortcut support
-- preserves close/cancel behavior
+- 保留当前数字键选择逻辑
+- 保留关闭 / 取消能力
 
-### 7. Gate Calibration Panel
+### 7. 暗闸校准面板
 
-Purpose:
-Provide formal UI feedback during gate rotation puzzle play.
+作用：  
+在玩家旋转暗闸时，提供正式 UI 反馈。
 
-Visual treatment:
+表现形式：
 
-- right-side dedicated puzzle panel
-- strong border and stable block layout
-- explicit angle readout
-- clear instruction row for rotate / confirm / cancel
+- 位于右侧
+- 独立面板
+- 边框感更强
+- 角度信息、有效范围、操作提示要清晰
 
-Data needed from gameplay:
+需要从玩法层补充的数据：
 
-- gate puzzle active state
-- current angle / calibration display value
-- valid range or “ready to confirm” state
-- active gate side if available
+- 当前是否处于暗闸校准状态
+- 当前角度 / 校准显示值
+- 正确范围或“可确认”状态
+- 当前是左闸还是右闸（如果可区分）
 
-Important note:
+重要说明：
 
-The current temporary `OnGUI` layer does not yet expose a dedicated gate puzzle panel. This means the formal Chapter01 UI implementation must add a presentation path for gate calibration instead of only reskinning existing panels.
+当前临时 `OnGUI` 版本里并没有真正独立的正式“暗闸校准面板”。  
+这意味着本次正式 UI 实现，不只是换皮，还需要**新增暗闸校准的专用表现层**。
 
-## Technical Approach
+## 六、技术实现方向
 
-Recommended approach:
+推荐方案：
 
-- introduce a dedicated Canvas-based Chapter01 runtime UI
-- keep `PrototypeRuntimeUI` only as a compatibility fallback or retire its Chapter01 rendering paths after the new UI is connected
-- preserve the current gameplay method surface as much as possible
+- 新建基于 `Canvas` 的第一章正式运行时 UI
+- `PrototypeRuntimeUI` 保留为兼容层，或在新 UI 接通后逐步退出第一章表现职责
+- 尽量保持现有玩法调用接口不变
 
-Architecture:
+整体结构建议：
 
-1. Create a Chapter01 UI root under Canvas in the existing `Garden_Main` scene
-2. Split each UI block into clearly named sub-objects/panels
-3. Route existing runtime calls into the new presentation layer
-4. Add an explicit gate calibration presenter path for the right-side puzzle panel
-5. Keep fonts, colors, and sprite slots centralized for teammate-friendly replacement
+1. 在 `Garden_Main` 原场景中建立 `Chapter01UIRoot`
+2. 将每个 UI 模块拆成独立子对象 / 子面板
+3. 让现有运行时调用转向新的正式 UI 表现层
+4. 为暗闸校准单独增加右侧面板的数据更新通路
+5. 将字体、颜色、边框、贴图等整理成便于同学换皮的结构
 
-## Teammate-Friendly Structure
+## 七、为了方便同学后续修改 UI 的结构要求
 
-The UI must be organized so later art replacement is easy.
+这套 UI 必须为后续“换边框、换字体、换贴图”预留空间。
 
-Rules:
+规则如下：
 
-- expose background images / frame sprites as serialized fields
-- expose color tokens as serialized fields where practical
-- avoid hardcoding visual values in multiple places
-- separate data update methods from styling setup
-- name hierarchy by function, not by art pass
+- 背景图、边框图、装饰图尽量做成可序列化字段
+- 颜色尽量集中管理，不要在很多地方写死
+- 数据更新逻辑与样式设置逻辑分开
+- 层级命名按功能命名，而不是按美术临时名字命名
 
-Recommended hierarchy:
+建议层级：
 
 - `Chapter01UIRoot`
 - `TopLeft/PageCounterPanel`
@@ -264,90 +273,93 @@ Recommended hierarchy:
 - `Center/FlowChoicePanel`
 - `Right/GateCalibrationPanel`
 
-This structure allows a teammate to replace:
+这样后续同学主要就可以替换：
 
-- frame sprite
-- background texture
-- decorative ornament
-- font asset
-- spacing and padding
+- 边框图
+- 背景贴图
+- 装饰元素
+- 字体资源
+- 间距与布局细节
 
-without needing to rewrite the gameplay hookups.
+而不用去碰第一章玩法逻辑。
 
-## Interaction and Data Flow
+## 八、交互与数据流
 
-Gameplay ownership stays where it is now:
+玩法归属保持不变：
 
-- `Chapter01Director` owns state transitions and correctness
-- `GardenGameManager` owns high-level UI calls
-- the new Chapter01 formal UI owns presentation only
+- `Chapter01Director` 继续负责第一章状态切换与正确性判断
+- `GardenGameManager` 继续负责高层 UI 调用
+- 新的第一章正式 UI 只负责表现
 
-Flow:
+数据流应为：
 
-1. Gameplay changes state
-2. `GardenGameManager` or `Chapter01Director` calls the UI-facing methods
-3. Formal UI updates the correct panel
-4. Modal UI panels notify gameplay through existing callbacks
+1. 第一章玩法状态变化
+2. `GardenGameManager` 或 `Chapter01Director` 发出 UI 调用
+3. 第一章正式 UI 更新对应面板
+4. 模态面板通过已有回调把选择结果回传给玩法层
 
-For gate calibration, the new UI needs an additional update path because that information is not currently rendered as a formal panel.
+对于暗闸校准，由于现在没有正式独立面板，所以这部分需要新增专门的数据传递路径。
 
-## Error Handling and Safety
+## 九、容错与安全要求
 
-If a panel is missing:
+如果某个 UI 面板缺失：
 
-- gameplay should continue
-- a missing panel should fail quietly where possible
-- button callbacks should not throw if the UI is closed while input is pressed
+- 不应阻断第一章玩法
+- 尽量静默失败
+- 不应因为某个面板没挂好就让回调报错
 
-If a font asset is missing:
+如果字体资源缺失：
 
-- fallback should remain readable
-- no panel should become invisible due to font load failure
+- 必须保留可读性
+- 不能出现整块文本消失
 
-If teammate art is not ready:
+如果正式美术资源还没齐：
 
-- the layout should still work with placeholder slices/colors
+- 也要能先用简化边框和配色把结构跑起来
 
-## Testing Expectations
+## 十、验收测试要求
 
-Before calling the UI pass complete, verify:
+在认为第一章 UI 完成之前，至少验证以下内容：
 
-1. Intro end -> objective appears correctly
-2. Gate interaction -> calibration panel appears and closes correctly
-3. Two gates solved -> flow direction panel opens correctly
-4. Wrong choice -> toast/result appears and objective updates
-5. Correct choice -> page becomes available and feedback is readable
-6. Dialogue panels remain readable in bright and dark scene areas
-7. Input shortcuts still work for direction selection
-8. No Chapter02 behavior is regressed by the Chapter01 UI changes
+1. 开场结束后，目标栏能正常出现
+2. 与暗闸交互时，校准面板能正常显示和关闭
+3. 左右暗闸都完成后，水流选择面板能正常弹出
+4. 选择错误方向后，顶部结果提示和目标文本都会更新
+5. 选择正确方向后，残页可拾取，反馈可读
+6. 对话框在明亮和较暗场景下都清楚
+7. 数字键快捷选择仍然有效
+8. 第一章正式 UI 不应破坏第二章逻辑
 
-## Out of Scope
+## 十一、本次不包含的内容
 
-These are not part of this Chapter01 UI pass:
+以下内容不属于这次第一章 UI 制作范围：
 
-- Chapter02 final UI
-- new gameplay rules
-- scene rebuild
-- cinematic polish
-- voice presentation
-- replacing teammate art pipeline
+- 第二章正式 UI
+- 新玩法规则
+- 重新搭场景
+- 纯演出级镜头包装
+- 配音表现
+- 整体美术管线重构
 
-## Recommended Implementation Order
+## 十二、推荐制作顺序
 
-1. Set up Canvas root and shared style tokens
-2. Build top-left persistent HUD blocks
-3. Build dialogue box
-4. Build toast/result banner
-5. Build interaction prompt
-6. Build flow choice modal
-7. Build gate calibration panel
-8. Wire all Chapter01 calls and verify the full loop
+建议按这个顺序实施：
 
-## Recommendation
+1. 先搭 Canvas 根节点和共享样式
+2. 先做左上角 HUD（残页计数、目标栏）
+3. 做对话框
+4. 做顶部提示 / 结果提示
+5. 做底部交互提示
+6. 做水流方向选择面板
+7. 做暗闸校准面板
+8. 最后联调整个第一章流程
 
-Proceed with a Canvas-based formal Chapter01 UI and keep the gameplay API stable. This gives the best balance of:
+## 十三、最终建议
 
-- visual quality
-- implementation control
-- teammate reskin flexibility
-- low gameplay regression risk
+建议采用 **Canvas 化第一章正式 UI** 的实现方式，并保持现有玩法 API 稳定。  
+这是目前在以下几项之间最平衡的方案：
+
+- 视觉完成度
+- 实现可控性
+- 便于同学后续换皮
+- 降低玩法回归风险
