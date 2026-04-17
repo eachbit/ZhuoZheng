@@ -206,6 +206,7 @@ namespace ZhuozhengYuan
             }
 
             BuildDecorations(displayPoints);
+            BuildDestinationMarker();
             _revealRoutine = StartCoroutine(RevealGuideRoutine());
         }
 
@@ -405,16 +406,24 @@ namespace ZhuozhengYuan
                 _decorationMaterial.name = "Chapter01GuideDecorationMat";
             }
 
+            if (_destinationMarkerMaterial == null)
+            {
+                _destinationMarkerMaterial = new Material(shader);
+                _destinationMarkerMaterial.name = "Chapter01GuideDestinationMarkerMat";
+            }
+
             Color mainColor = decorationProfile.ribbonBaseColor;
             mainColor.a = Mathf.Clamp01(idleAlpha);
             ApplyMaterialColors(_mainGuideMaterial, mainColor, decorationProfile.ribbonHighlightColor, 1f, 2.8f);
             ApplyMaterialColors(_mistGuideMaterial, decorationProfile.decorationPrimaryColor, decorationProfile.decorationSecondaryColor, 0.72f, 1.8f);
             ApplyMaterialColors(_crestGuideMaterial, decorationProfile.ribbonHighlightColor, Color.white, 1f, 3.4f);
             ApplyMaterialColors(_decorationMaterial, decorationProfile.decorationPrimaryColor, decorationProfile.decorationSecondaryColor, 0.88f, 1.45f);
+            ApplyMaterialColors(_destinationMarkerMaterial, decorationProfile.destinationMarkerColor, decorationProfile.ribbonHighlightColor, 0.96f, 1.92f);
             ApplyMaterialMotion(_mainGuideMaterial, decorationProfile.animationSpeed * 1.05f, decorationProfile.animationSpeed * 0.82f, 1.55f);
             ApplyMaterialMotion(_mistGuideMaterial, decorationProfile.animationSpeed * 0.75f, decorationProfile.animationSpeed * 0.62f, 1.1f);
             ApplyMaterialMotion(_crestGuideMaterial, decorationProfile.animationSpeed * 1.25f, decorationProfile.animationSpeed, 1.85f);
             ApplyMaterialMotion(_decorationMaterial, decorationProfile.animationSpeed * 0.58f, decorationProfile.animationSpeed * 0.48f, 0.95f);
+            ApplyMaterialMotion(_destinationMarkerMaterial, decorationProfile.animationSpeed * 0.9f, decorationProfile.animationSpeed * 0.72f, 1.24f);
         }
 
         private void BuildDecorations(List<Vector3> displayPoints)
@@ -536,6 +545,9 @@ namespace ZhuozhengYuan
                     ApplyRendererAlpha(_segments[index].crestStrip, Mathf.Min(1f, idleAlpha * 1.12f) * alphaMultiplier, crestColor);
                 }
 
+                ApplyChildRendererAlpha(_decorationsRoot, alphaMultiplier);
+                ApplyChildRendererAlpha(_destinationMarkerRoot, alphaMultiplier);
+
                 yield return null;
             }
 
@@ -606,6 +618,68 @@ namespace ZhuozhengYuan
             }
         }
 
+        private void BuildDestinationMarker()
+        {
+            if (!useDestinationMarker || _destinationMarkerRoot == null || targetGate == null)
+            {
+                return;
+            }
+
+            Vector3 anchorPosition = GetGuidePoint(targetGate.position) + Vector3.up * decorationProfile.destinationMarkerHeight;
+            CreateDestinationMarkerQuad(
+                "DestinationMarker_Ring",
+                anchorPosition,
+                new Vector3(decorationProfile.destinationMarkerScale, decorationProfile.destinationMarkerScale, 1f),
+                decorationProfile.destinationMarkerColor,
+                decorationProfile.ribbonHighlightColor);
+
+            CreateDestinationMarkerQuad(
+                "DestinationMarker_Glow",
+                anchorPosition + Vector3.up * 0.08f,
+                new Vector3(decorationProfile.destinationMarkerScale * 1.28f, decorationProfile.destinationMarkerScale * 1.28f, 1f),
+                new Color(
+                    decorationProfile.destinationMarkerColor.r,
+                    decorationProfile.destinationMarkerColor.g,
+                    decorationProfile.destinationMarkerColor.b,
+                    decorationProfile.destinationMarkerColor.a * 0.52f),
+                decorationProfile.ribbonHighlightColor);
+        }
+
+        private Transform CreateDestinationMarkerQuad(string markerName, Vector3 worldPosition, Vector3 scale, Color baseColor, Color accentColor)
+        {
+            GameObject markerObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            markerObject.name = markerName;
+            markerObject.transform.SetParent(_destinationMarkerRoot, false);
+            markerObject.transform.position = worldPosition;
+            markerObject.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            markerObject.transform.localScale = scale;
+
+            Collider collider = markerObject.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Destroy(collider);
+            }
+
+            MeshRenderer renderer = markerObject.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = _destinationMarkerMaterial;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+                renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+
+                MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(propertyBlock);
+                propertyBlock.SetColor("_Color", baseColor);
+                propertyBlock.SetColor("_BaseColor", baseColor);
+                propertyBlock.SetColor("_AccentColor", accentColor);
+                renderer.SetPropertyBlock(propertyBlock);
+            }
+
+            return markerObject.transform;
+        }
+
         private void EnsureDecorationProfileInitialized()
         {
             if (decorationProfile.decorationSpacing <= 0.01f)
@@ -664,6 +738,74 @@ namespace ZhuozhengYuan
             propertyBlock.SetColor("_Color", color);
             propertyBlock.SetColor("_BaseColor", color);
             renderer.SetPropertyBlock(propertyBlock);
+        }
+
+        private void ApplyChildRendererAlpha(Transform root, float alphaMultiplier)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            MeshRenderer[] renderers = root.GetComponentsInChildren<MeshRenderer>();
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                MeshRenderer renderer = renderers[index];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(propertyBlock);
+                Color baseColor = ResolveOverlayBaseColor(renderer);
+
+                baseColor.a *= alphaMultiplier;
+                propertyBlock.SetColor("_Color", baseColor);
+                propertyBlock.SetColor("_BaseColor", baseColor);
+                renderer.SetPropertyBlock(propertyBlock);
+            }
+        }
+
+        private Color ResolveOverlayBaseColor(MeshRenderer renderer)
+        {
+            if (renderer == null)
+            {
+                return Color.white;
+            }
+
+            string rendererName = renderer.transform.name;
+            if (rendererName.StartsWith("DecorationMarker_"))
+            {
+                int markerIndex = 0;
+                if (rendererName.Length >= 2)
+                {
+                    int.TryParse(rendererName.Substring(rendererName.Length - 2), out markerIndex);
+                }
+
+                return Color.Lerp(
+                    decorationProfile.decorationPrimaryColor,
+                    decorationProfile.decorationSecondaryColor,
+                    markerIndex % 2 == 0 ? 0.18f : 0.62f);
+            }
+
+            if (rendererName == "DestinationMarker_Glow")
+            {
+                return new Color(
+                    decorationProfile.destinationMarkerColor.r,
+                    decorationProfile.destinationMarkerColor.g,
+                    decorationProfile.destinationMarkerColor.b,
+                    decorationProfile.destinationMarkerColor.a * 0.52f);
+            }
+
+            if (rendererName == "DestinationMarker_Ring")
+            {
+                return decorationProfile.destinationMarkerColor;
+            }
+
+            return renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_BaseColor")
+                ? renderer.sharedMaterial.GetColor("_BaseColor")
+                : Color.white;
         }
 
         private float GetGuideSurfaceY(Vector3 worldPosition)

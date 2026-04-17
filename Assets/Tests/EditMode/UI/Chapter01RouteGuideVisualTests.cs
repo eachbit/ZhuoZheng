@@ -102,6 +102,46 @@ namespace ZhuozhengYuan.Tests.EditMode
             }
         }
 
+        [Test]
+        public void RebuildGuide_ShouldCreateDestinationMarkerChild()
+        {
+            Type guideType = Type.GetType("ZhuozhengYuan.Chapter01AuthoredRouteGuide, Assembly-CSharp");
+            Assert.IsNotNull(guideType, "Chapter01AuthoredRouteGuide it still missing.");
+
+            GameObject root = new GameObject("RouteGuideRoot");
+            GameObject start = null;
+            GameObject end = null;
+
+            try
+            {
+                MonoBehaviour guide = (MonoBehaviour)root.AddComponent(guideType);
+
+                start = new GameObject("Start");
+                end = new GameObject("End");
+
+                start.transform.position = new Vector3(0f, 0f, 0f);
+                end.transform.position = new Vector3(10f, 0f, 4f);
+
+                SetField(guide, "showGuideOnStart", true);
+                SetField(guide, "playerStartPose", start.transform);
+                SetField(guide, "targetGate", end.transform);
+                SetField(guide, "trimSegmentsAgainstObstacles", false);
+                SetField(guide, "groundOffset", 0f);
+
+                Invoke(guide, "RebuildGuide");
+
+                Transform markerRoot = root.transform.Find("Chapter01AuthoredGuideRoot/DestinationMarkerRoot");
+                Assert.IsNotNull(markerRoot, "DestinationMarkerRoot was not created.");
+                Assert.Greater(markerRoot.childCount, 0, "Destination marker content was not created.");
+            }
+            finally
+            {
+                DestroyImmediateIfExists(end);
+                DestroyImmediateIfExists(start);
+                DestroyImmediateIfExists(root);
+            }
+        }
+
         private static void SetField(object target, string fieldName, object value)
         {
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
