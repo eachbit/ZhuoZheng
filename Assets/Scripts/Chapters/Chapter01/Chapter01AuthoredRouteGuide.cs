@@ -43,12 +43,20 @@ namespace ZhuozhengYuan
         public Color mainGuideColor = new Color(0.88f, 0.82f, 0.52f, 0.92f);
         public Color mistGuideColor = new Color(0.53f, 0.78f, 0.72f, 0.2f);
         public float idleAlpha = 0.72f;
+        public bool useHybridDecorations = true;
+        public bool useDestinationMarker = true;
+        public Chapter01GuideDecorationProfile decorationProfile = default;
+        public int maxDecorationMarkers = 6;
 
         private readonly List<GuideSegment> _segments = new List<GuideSegment>();
         private Transform _runtimeRoot;
+        private Transform _decorationsRoot;
+        private Transform _destinationMarkerRoot;
         private Material _mainGuideMaterial;
         private Material _mistGuideMaterial;
         private Material _crestGuideMaterial;
+        private Material _decorationMaterial;
+        private Material _destinationMarkerMaterial;
         private Coroutine _revealRoutine;
         private Coroutine _fadeRoutine;
         private bool _guideHidden;
@@ -96,6 +104,7 @@ namespace ZhuozhengYuan
             manager = gameManager;
             director = chapterDirector;
             introController = introSequenceController;
+            EnsureDecorationProfileInitialized();
 
             if (playerStartPose == null && introController != null)
             {
@@ -113,6 +122,7 @@ namespace ZhuozhengYuan
         public void RebuildGuide()
         {
             DestroyRuntimeGuide();
+            EnsureDecorationProfileInitialized();
 
             if (!showGuideOnStart || (director != null && director.IsGateSolved(GateId.Left)))
             {
@@ -130,6 +140,10 @@ namespace ZhuozhengYuan
             EnsureMaterials();
             _runtimeRoot = new GameObject("Chapter01AuthoredGuideRoot").transform;
             _runtimeRoot.SetParent(transform, false);
+            _decorationsRoot = new GameObject("DecorationsRoot").transform;
+            _decorationsRoot.SetParent(_runtimeRoot, false);
+            _destinationMarkerRoot = new GameObject("DestinationMarkerRoot").transform;
+            _destinationMarkerRoot.SetParent(_runtimeRoot, false);
 
             for (int index = 0; index < displayPoints.Count - 1; index++)
             {
@@ -486,9 +500,19 @@ namespace ZhuozhengYuan
             {
                 Destroy(_runtimeRoot.gameObject);
                 _runtimeRoot = null;
+                _decorationsRoot = null;
+                _destinationMarkerRoot = null;
             }
 
             _segments.Clear();
+        }
+
+        private void EnsureDecorationProfileInitialized()
+        {
+            if (decorationProfile.decorationSpacing <= 0.01f)
+            {
+                decorationProfile = Chapter01GuideDecorationProfile.CreateDefault();
+            }
         }
 
         private void SetSegmentReveal(GuideSegment segment, float normalizedReveal)
