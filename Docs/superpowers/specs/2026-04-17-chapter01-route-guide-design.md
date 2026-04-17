@@ -1,254 +1,336 @@
-# Chapter01 Route Guide Beautification Design
+# 第一章引导路线美化设计文档
 
-Date: 2026-04-17
-Project: ZhuoZheng / Garden_Main
-Scope: Beautify the Chapter01 route guidance so it clearly guides the player to the next playable location while preserving scene tone and avoiding any gameplay logic changes.
+日期：2026-04-17  
+项目：ZhuoZheng / Garden_Main  
+范围：在不改动第一章现有游玩逻辑的前提下，美化第一章前往目标地点的路线指引表现，使其更适合 3D 园林场景，并保持良好的可读性与审美品质。
 
-## 1. Goal
+## 一、目标
 
-Upgrade the existing Chapter01 route guidance into a polished in-world visual guide that:
+将当前第一章的路线引导升级为一套更正式、更美观的场景内引导表现，最终满足以下目标：
 
-- fits the 3D classical garden scene
-- reads clearly from a third-person camera
-- does not replace existing objective, trigger, or chapter progression logic
-- fades out naturally when the player reaches the intended target
+- 适配 3D 古典园林场景与第三人称视角
+- 让玩家能够自然理解“接下来应该往哪里走”
+- 不替换现有章节目标、触发器、交互、存档或进度推进逻辑
+- 在玩家靠近目标后自然淡出，不长期干扰画面
 
-The guidance should feel like part of the garden atmosphere rather than a generic mission arrow.
+最终效果应更像“园林中的气流、水纹、引路光带”，而不是常见任务游戏里的强功能性大箭头。
 
-## 2. Design Principles
+## 二、核心约束
 
-Two constraints are mandatory for this work:
+这次工作必须同时满足两条硬约束：
 
-1. Beauty first:
-   the guide must feel elegant, restrained, and integrated with the garden. It should resemble water glow, mist, or faint gold dust instead of neon game navigation.
+### 1. 美观优先
 
-2. No gameplay regression:
-   the guide is presentation-only. It must not change how objectives advance, how gates solve, how interaction prompts appear, how saves work, or how chapter triggers fire.
+路线指引必须与园林环境融合，风格克制、雅致、轻盈，不能做成粗糙的霓虹导航线或明显破坏氛围的功能性 UI。
 
-Supporting principles:
+期望视觉关键词：
 
-- readable without dominating the frame
-- visible on stone path, bridge, and garden ground
-- easy to tune by artists or level designers later
-- deactivates cleanly when not needed
+- 水光
+- 雾气
+- 金粉
+- 引流感
+- 贴地
+- 柔和
 
-## 3. Recommended Approach
+不期望的视觉方向：
 
-Use a hybrid presentation:
+- 夸张高亮
+- 厚重描边
+- 科幻霓虹
+- 长时间霸占画面中心
 
-- Primary guide:
-  a ground-hugging flowing ribbon that follows authored route points
-- Secondary guide:
-  a subtle destination marker hovering above the current target
+### 2. 不影响现有逻辑游玩
 
-Do not use a full-time HUD arrow as the main guidance layer.
+路线系统本次只允许做“表现层升级”，不允许改变第一章现有玩法与流程判断。
 
-Reasoning:
+明确不能改坏的内容包括：
 
-- the project is a 3D garden scene, so ground guidance communicates direction more naturally than screen-space arrows
-- the project already contains `Chapter01AuthoredRouteGuide`, `GuidePoint` markers, and authored path support, so visual upgrade is lower risk than replacing the system
-- a soft destination marker solves the last 10 percent of clarity without making the scene look gamey
+- 章节目标切换逻辑
+- 左右暗闸交互与校准逻辑
+- 水流方向选择逻辑
+- 对话触发与结束逻辑
+- 页面拾取逻辑
+- 场景触发器启用与关闭逻辑
+- 存档与读取逻辑
 
-## 4. Visual Direction
+换句话说：  
+这次不是重做导航系统，而是在现有目标与路径基础上，把路线“做漂亮”。
 
-### 4.1 Ground ribbon
+## 三、推荐方案
 
-The route should look like a narrow animated band resting slightly above the ground:
+本次采用混合式场景内引导：
 
-- base hue: desaturated teal-green
-- highlight hue: warm pale gold
-- brightness: moderate, never emissive enough to wash out the scene
-- width: readable from gameplay camera, but narrower than a road marking
-- edge treatment: soft falloff, not hard-edged painted stripes
-- motion: slow directional shimmer or pulse toward the objective
+- 主引导：贴地流光丝带
+- 辅引导：关键节点的局部地贴效果（如水纹、落叶聚拢、轻脚印感）
+- 补充提示：目标点轻量悬浮标记
 
-The intended feeling is "guided flow through the garden", not "quest line on the floor".
+不采用“全程头顶大箭头”作为主方案，也不采用“整条路线铺满地贴”作为主方案。
 
-### 4.2 Destination marker
+推荐原因如下：
 
-At the current target, add one subtle marker:
+- 项目本身是 3D 园林游览与章节互动场景，贴地引导比屏幕 UI 箭头更自然
+- 项目当前已经存在 `Chapter01AuthoredRouteGuide`、`GuidePoint`、`Chapter01GuidePath` 等路线基础
+- 在不动核心逻辑的前提下，升级现有引导表现，风险最低
+- 流光丝带负责远距离方向感，局部地贴负责近距离审美细节，两者组合后更适合园林项目
+- 目标点增加轻量标记后，可以补足终点识别度，不需要牺牲整体美感
 
-- a soft glow ring
-- a suspended mote cluster
-- or a small elegant crest-like shimmer
+## 四、视觉方向
 
-It should sit above the target and help players identify the endpoint once the route approaches it.
+### 4.1 地面流光丝带
 
-It must remain visually lighter than a standard action-game waypoint arrow.
+路线应表现为一条贴地、沿园路延伸的轻薄引导带，像淡淡流动的水光或被风带动的金色薄雾。
 
-### 4.3 Visibility rules
+建议视觉参数：
 
-The guide should:
+- 主色：低饱和青绿色
+- 高光：淡金色或暖白金色
+- 明度：可见但不过曝
+- 宽度：足够在第三人称镜头下辨认，但不能像道路涂装一样宽
+- 边缘：柔和衰减，不做硬边
+- 动态：缓慢向目标流动的 shimmer / pulse，而不是明显跳动
 
-- be visible enough in daylight scenes
-- avoid overpowering dialogue or chapter UI
-- avoid clipping harshly through uneven ground
-- avoid becoming a bright streak across the whole environment
+预期观感：
 
-## 5. Behavior
+- 像“引路的气”
+- 像“顺水而行的流向”
+- 像“若有若无的地面灵气”
 
-### 5.1 When the guide appears
+### 4.2 目标点轻量悬浮标记
 
-The guide appears only when guidance is needed, such as:
+在当前目标物体上方增加一个轻量提示，用于帮助玩家确认路线终点。
 
-- chapter start before the player reaches the left gate
-- after route rebuilds when the target is still unresolved by the player
+可选表现包括：
 
-### 5.2 When the guide hides
+- 柔和光环
+- 小型漂浮光点群
+- 园林风的纹样光印
 
-The guide fades out when:
+要求：
 
-- the player reaches the target radius
-- the relevant chapter step is already solved
-- the system decides the route should no longer be shown
+- 必须轻
+- 必须雅
+- 不要做成大箭头
+- 不能压过场景主体
 
-### 5.3 What the guide must not do
+### 4.3 局部地贴装饰层
 
-The guide must not:
+在路线的关键位置叠加少量局部地贴，用于增加园林感与节点提示感。
 
-- move the player
-- alter target selection logic
-- modify objective text rules
-- unlock or complete chapter state
-- interfere with interaction prompts, dialogue, gate calibration, or water direction selection
+建议只在以下位置使用：
 
-## 6. Technical Design
+- 转弯处
+- 分岔处
+- 桥头与桥尾
+- 靠近目标前的一小段区域
 
-### 6.1 Existing system to reuse
+建议的地贴风格：
 
-Keep `Assets/Scripts/Chapters/Chapter01/Chapter01AuthoredRouteGuide.cs` as the routing and lifecycle entry point.
+- 淡水纹
+- 金粉汇聚纹
+- 落叶聚拢痕迹
+- 很轻的步迹引导感
 
-The following parts are already useful and should remain the foundation:
+使用要求：
 
-- authored route root lookup
-- route point collection
-- smoothed display path generation
-- segment reveal / fade timing
-- solved-target hiding logic
+- 数量必须克制
+- 只做局部强调，不做整路满铺
+- 亮度低于主流光丝带
+- 近看有细节，远看不抢主路线
 
-### 6.2 What changes
+### 4.4 可视性规则
 
-Refine only the presentation layer:
+路线必须满足以下可视性要求：
 
-- segment mesh look
-- segment material setup
-- reveal timing polish
-- destination marker creation and fade logic
-- tuning values for width, alpha, glow, and offsets
+- 白天场景下可见
+- 石板路、桥面、地面上都能读清
+- 与对话 UI、目标 UI 不抢主次
+- 不变成整条场景里最亮的东西
+- 在高低不平地形上尽量避免穿地和闪烁
 
-### 6.3 What stays unchanged
+## 五、行为设计
 
-Do not rewrite:
+### 5.1 什么时候显示
 
-- `Chapter01Director` objective flow
-- `GardenGameManager` chapter state progression
-- interactable trigger rules
-- save data fields or serialization
-- authored path point ownership in scene
+路线只在“确实需要玩家前往某处”时出现，例如：
 
-### 6.4 Rendering strategy
+- 第一章开局，玩家还未到达左侧暗闸
+- 路径重建后，当前目标仍未完成
 
-Preferred implementation order:
+### 5.2 什么时候隐藏
 
-1. improve the existing ribbon strips and shader/material response
-2. add a lightweight endpoint marker object
-3. tune visibility, fade, and obstruction trimming
+路线在以下情况下淡出：
 
-If the current custom shader is insufficient, update or replace the route material implementation, but keep the route generation code path stable.
+- 玩家进入目标附近半径
+- 对应章节步骤已经完成
+- 现有系统判断当前不应继续显示该路线
 
-External assets or packages may be referenced for inspiration, but the first implementation should prefer the existing local system unless a package clearly reduces risk and fits the project style.
+### 5.3 不能做的行为
 
-## 7. Options Considered
+路线系统不得：
 
-### Option A: Ground flowing ribbon
+- 替玩家导航寻路
+- 自动推动章节状态
+- 修改目标判定
+- 改写交互提示触发规则
+- 干扰对话、暗闸校准、水流选择等模态内容
 
-Pros:
+### 5.4 主辅层关系
 
-- best fit for 3D garden traversal
-- strongest atmosphere
-- reuses existing authored route system
+混合方案中的主辅层关系必须稳定：
 
-Cons:
+- 流光丝带负责连续导航
+- 局部地贴负责关键节点强调
+- 目标点轻量标记负责终点识别
 
-- needs careful tuning to avoid looking too bright or too wide
+三者的优先级顺序为：
 
-Recommendation:
+1. 玩家先看懂大方向
+2. 玩家靠近节点后注意到局部提示
+3. 玩家接近终点时识别目标点
 
-This is the chosen primary approach.
+不能出现“地贴比主路线更醒目”或“终点标记比场景主体更抢眼”的情况。
 
-### Option B: Ground decals like ripples, leaves, or footprints
+## 六、技术设计
 
-Pros:
+### 6.1 复用现有系统
 
-- elegant and environmental
-- can look very natural in URP
+保留 `Assets/Scripts/Chapters/Chapter01/Chapter01AuthoredRouteGuide.cs` 作为现有路线引导的主入口。
 
-Cons:
+现有可继续复用的部分包括：
 
-- weaker long-distance readability
-- more content-authoring overhead for decal assets
+- 路线根节点查找
+- 路径点收集
+- 平滑路径生成
+- 分段显示与淡出
+- 根据章节完成状态隐藏引导
 
-Recommendation:
+### 6.2 这次主要改什么
 
-Use only as a future enhancement or secondary treatment, not the first pass.
+本次只升级表现层，主要改动范围为：
 
-### Option C: Floating arrow and edge indicator
+- 路线段的外观
+- 材质与颜色表现
+- 宽度、透明度、高度等参数
+- 动态 reveal / fade 的质感
+- 局部节点地贴的生成与显隐
+- 目标点标记的生成与销毁
 
-Pros:
+### 6.3 明确不改什么
 
-- highest immediate clarity
-- easy for players to understand
+本次不重写以下逻辑：
 
-Cons:
+- `Chapter01Director` 的目标推进逻辑
+- `GardenGameManager` 的章节状态控制
+- interactable 的可交互规则
+- save data 结构与持久化
+- 场景中已有路径点的归属关系
 
-- weakest thematic fit
-- feels too system-heavy for this project
+### 6.4 渲染策略
 
-Recommendation:
+实现顺序建议如下：
 
-Keep only as an optional fallback, not the main route guide.
+1. 先升级现有路线丝带的材质与外观
+2. 再在关键节点增加局部地贴表现
+3. 然后增加目标点轻量标记
+4. 最后调显隐、抗穿地和亮度参数
 
-## 8. Risks and Mitigations
+如果当前自定义 shader 不足以支撑理想观感，可以升级路线材质实现，但不要推翻现有路径生成逻辑。
 
-### Risk 1: The guide becomes visually noisy
+如果后续需要引入外部资源或组件，也应优先作为“表现增强”，而不是替代现有路径逻辑。
 
-Mitigation:
+## 七、方案对比
 
-- clamp brightness and alpha
-- use narrow width
-- use soft motion rather than aggressive pulsing
+### 方案 A：地面流光丝带
 
-### Risk 2: The guide intersects uneven terrain badly
+优点：
 
-Mitigation:
+- 最适合 3D 园林移动路线
+- 美术气质最好
+- 与当前项目已有路径点系统最契合
 
-- keep using ground resolution and obstacle trimming
-- slightly increase ground offset only as much as needed to prevent z-fighting
+缺点：
 
-### Risk 3: The guide accidentally changes chapter behavior
+- 需要仔细调亮度、宽度、动效节奏
 
-Mitigation:
+结论：
 
-- keep all changes inside route guide presentation code
-- do not edit objective progression rules except for read-only integration
-- verify the guide still hides using existing solved-state checks
+这是本次选定的主方案。
 
-## 9. Verification Plan
+### 方案 B：地贴脚印 / 水纹 / 落叶
 
-Before calling the work complete, verify:
+优点：
 
-- the route appears at chapter start when expected
-- the route still points to the intended gate target
-- the route fades after reaching the target
-- UI prompts, gate interaction, water direction choice, and objective progression still behave exactly as before
-- no new save/load side effects occur
-- the guide remains readable but not overpowering in gameplay camera view
+- 更像环境装饰的一部分
+- 在 URP 下有潜力做得很精致
 
-## 10. Deliverable
+缺点：
 
-The final deliverable for this design is:
+- 远距离辨识度偏弱
+- 需要额外贴花资源与布设规则
 
-- a beautified Chapter01 in-world route guide based on the existing authored route system
-- a subtle destination marker
-- no chapter logic regressions
-- tunable visual parameters suitable for future polish
+结论：
+
+适合作为本次混合方案中的辅层，不单独作为第一版主路线。
+
+### 方案 C：头顶箭头 + 屏幕边缘指示
+
+优点：
+
+- 理解成本最低
+- 功能性最强
+
+缺点：
+
+- 与园林氛围最不匹配
+- 容易显得太“系统 UI”
+
+结论：
+
+只适合作为备用手段，不作为这次的主要方向。
+
+## 八、风险与规避
+
+### 风险 1：路线太亮、太粗、太抢画面
+
+规避方式：
+
+- 限制 alpha
+- 控制宽度
+- 使用柔和流动，不使用强脉冲
+
+### 风险 2：路线穿地或在不平地面闪烁
+
+规避方式：
+
+- 继续使用现有地面采样与障碍裁剪逻辑
+- 仅小幅调整 ground offset，避免 z-fighting
+
+### 风险 3：美化时误伤章节逻辑
+
+规避方式：
+
+- 所有改动尽量集中在 `Chapter01AuthoredRouteGuide` 的表现层
+- 不去改章节推进规则
+- 通过回归检查确认目标、交互、对话、触发器都保持原状
+
+## 九、验证方案
+
+在完成实现前，必须检查以下内容：
+
+- 第一章开局时路线能按预期出现
+- 路线仍然指向正确的目标暗闸
+- 玩家接近目标后路线能自然淡出
+- 对话、暗闸交互、水流选择、目标切换逻辑与实现前一致
+- 不引入新的存档 / 读档异常
+- 在实际游戏镜头下，路线清晰但不过度抢眼
+
+## 十、交付结果
+
+本次设计的最终交付目标为：
+
+- 一套基于现有 authored route system 的第一章正式场景混合式路线指引
+- 一套流光主路线表现
+- 一套局部节点地贴表现
+- 一套轻量目标点标记
+- 一组可调节的视觉参数，便于后续继续美术打磨
+- 零逻辑回归的路线美化实现
