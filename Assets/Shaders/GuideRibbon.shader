@@ -69,17 +69,23 @@ Shader "ZhuozhengYuan/GuideRibbon"
             {
                 float edgeMask = saturate(1.0 - abs(input.uv.x - 0.5) * 2.0);
                 edgeMask = pow(edgeMask, max(0.15, _EdgeSoftness));
+                float centerMask = smoothstep(0.08, 0.96, edgeMask);
 
                 float flow = 0.5 + 0.5 * sin(input.uv.y * 18.0 - _Time.y * (_FlowSpeed * 4.0));
                 float subFlow = 0.5 + 0.5 * sin(input.uv.y * 8.0 + _Time.y * (_FlowSpeed * 1.6));
+                float drift = 0.5 + 0.5 * sin(input.uv.y * 5.5 + _Time.y * (_FlowSpeed * 1.15) + (input.uv.x - 0.5) * 6.0);
                 float pulse = 0.82 + 0.18 * sin(_Time.y * (_PulseSpeed * 2.0) + input.uv.y * 3.5);
                 float crest = smoothstep(0.76, 0.98, flow) * edgeMask;
-                float halo = saturate(edgeMask * 0.7 + subFlow * 0.3);
+                float halo = saturate(edgeMask * 0.52 + subFlow * 0.24 + drift * 0.24);
+                float centerRibbon = smoothstep(0.58, 0.95, drift) * centerMask;
+                float sideBloom = smoothstep(0.35, 0.9, subFlow) * saturate(1.0 - centerMask * 0.68);
 
-                float3 color = _BaseColor.rgb * (0.55 + halo * 0.55);
+                float3 color = _BaseColor.rgb * (0.42 + halo * 0.58);
+                color += _AccentColor.rgb * centerRibbon * (_GlowBoost * 0.34);
                 color += _AccentColor.rgb * crest * _GlowBoost;
+                color += _AccentColor.rgb * sideBloom * 0.08;
 
-                float alpha = saturate((_BaseColor.a * (0.28 + edgeMask * 0.72) + crest * 0.45) * pulse * _AlphaScale);
+                float alpha = saturate((_BaseColor.a * (0.24 + edgeMask * 0.64 + centerRibbon * 0.2) + crest * 0.4) * pulse * _AlphaScale);
                 return half4(color, alpha);
             }
             ENDHLSL
@@ -140,17 +146,23 @@ Shader "ZhuozhengYuan/GuideRibbon"
             {
                 float edgeMask = saturate(1.0 - abs(i.uv.x - 0.5) * 2.0);
                 edgeMask = pow(edgeMask, max(0.15, _EdgeSoftness));
+                float centerMask = smoothstep(0.08, 0.96, edgeMask);
 
                 float flow = 0.5 + 0.5 * sin(i.uv.y * 18.0 - _Time.y * (_FlowSpeed * 4.0));
                 float subFlow = 0.5 + 0.5 * sin(i.uv.y * 8.0 + _Time.y * (_FlowSpeed * 1.6));
+                float drift = 0.5 + 0.5 * sin(i.uv.y * 5.5 + _Time.y * (_FlowSpeed * 1.15) + (i.uv.x - 0.5) * 6.0);
                 float pulse = 0.82 + 0.18 * sin(_Time.y * (_PulseSpeed * 2.0) + i.uv.y * 3.5);
                 float crest = smoothstep(0.76, 0.98, flow) * edgeMask;
-                float halo = saturate(edgeMask * 0.7 + subFlow * 0.3);
+                float halo = saturate(edgeMask * 0.52 + subFlow * 0.24 + drift * 0.24);
+                float centerRibbon = smoothstep(0.58, 0.95, drift) * centerMask;
+                float sideBloom = smoothstep(0.35, 0.9, subFlow) * saturate(1.0 - centerMask * 0.68);
 
-                float3 color = _BaseColor.rgb * (0.55 + halo * 0.55);
+                float3 color = _BaseColor.rgb * (0.42 + halo * 0.58);
+                color += _AccentColor.rgb * centerRibbon * (_GlowBoost * 0.34);
                 color += _AccentColor.rgb * crest * _GlowBoost;
+                color += _AccentColor.rgb * sideBloom * 0.08;
 
-                float alpha = saturate((_BaseColor.a * (0.28 + edgeMask * 0.72) + crest * 0.45) * pulse * _AlphaScale);
+                float alpha = saturate((_BaseColor.a * (0.24 + edgeMask * 0.64 + centerRibbon * 0.2) + crest * 0.4) * pulse * _AlphaScale);
                 return fixed4(color, alpha);
             }
             ENDCG

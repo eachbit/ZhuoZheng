@@ -205,6 +205,7 @@ namespace ZhuozhengYuan
                 return;
             }
 
+            BuildDecorations(displayPoints);
             _revealRoutine = StartCoroutine(RevealGuideRoutine());
         }
 
@@ -398,11 +399,67 @@ namespace ZhuozhengYuan
                 _crestGuideMaterial.name = "Chapter01GuideCrestMat";
             }
 
-            Color mainColor = mainGuideColor;
-            mainColor.a = idleAlpha;
-            ApplyMaterialColors(_mainGuideMaterial, mainColor, new Color(1f, 0.96f, 0.8f, 1f), 1f, 3.4f);
-            ApplyMaterialColors(_mistGuideMaterial, mistGuideColor, new Color(0.92f, 1f, 0.96f, 0.55f), 0.62f, 2f);
-            ApplyMaterialColors(_crestGuideMaterial, new Color(1f, 0.95f, 0.78f, idleAlpha), new Color(1f, 1f, 1f, 1f), 1.1f, 4.2f);
+            if (_decorationMaterial == null)
+            {
+                _decorationMaterial = new Material(shader);
+                _decorationMaterial.name = "Chapter01GuideDecorationMat";
+            }
+
+            Color mainColor = decorationProfile.ribbonBaseColor;
+            mainColor.a = Mathf.Clamp01(idleAlpha);
+            ApplyMaterialColors(_mainGuideMaterial, mainColor, decorationProfile.ribbonHighlightColor, 1f, 2.8f);
+            ApplyMaterialColors(_mistGuideMaterial, decorationProfile.decorationPrimaryColor, decorationProfile.decorationSecondaryColor, 0.72f, 1.8f);
+            ApplyMaterialColors(_crestGuideMaterial, decorationProfile.ribbonHighlightColor, Color.white, 1f, 3.4f);
+            ApplyMaterialColors(_decorationMaterial, decorationProfile.decorationPrimaryColor, decorationProfile.decorationSecondaryColor, 0.88f, 1.45f);
+            ApplyMaterialMotion(_mainGuideMaterial, decorationProfile.animationSpeed * 1.05f, decorationProfile.animationSpeed * 0.82f, 1.55f);
+            ApplyMaterialMotion(_mistGuideMaterial, decorationProfile.animationSpeed * 0.75f, decorationProfile.animationSpeed * 0.62f, 1.1f);
+            ApplyMaterialMotion(_crestGuideMaterial, decorationProfile.animationSpeed * 1.25f, decorationProfile.animationSpeed, 1.85f);
+            ApplyMaterialMotion(_decorationMaterial, decorationProfile.animationSpeed * 0.58f, decorationProfile.animationSpeed * 0.48f, 0.95f);
+        }
+
+        private void BuildDecorations(List<Vector3> displayPoints)
+        {
+            if (!useHybridDecorations || _decorationsRoot == null || displayPoints == null || displayPoints.Count < 2)
+            {
+                return;
+            }
+
+            int maxMarkers = Mathf.Max(1, maxDecorationMarkers);
+            float desiredSpacing = Mathf.Max(1.5f, decorationProfile.decorationSpacing);
+            float distanceSincePlacement = desiredSpacing;
+            int created = 0;
+
+            for (int index = 1; index < displayPoints.Count - 1 && created < maxMarkers; index++)
+            {
+                Vector3 previousPoint = displayPoints[index - 1];
+                Vector3 currentPoint = displayPoints[index];
+                Vector3 nextPoint = displayPoints[index + 1];
+                distanceSincePlacement += Vector3.Distance(previousPoint, currentPoint);
+
+                Vector3 incoming = (currentPoint - previousPoint).normalized;
+                Vector3 outgoing = (nextPoint - currentPoint).normalized;
+                float turnAngle = Vector3.Angle(incoming, outgoing);
+                bool isKeyTurn = turnAngle >= 16f;
+                bool isNearGoal = index >= displayPoints.Count - 3;
+                bool shouldPlace = distanceSincePlacement >= desiredSpacing && (created == 0 || isKeyTurn || isNearGoal);
+                if (!shouldPlace)
+                {
+                    continue;
+                }
+
+                CreateDecorationMarker(currentPoint, incoming, outgoing, created);
+                created++;
+                distanceSincePlacement = 0f;
+            }
+
+            if (created == 0 && displayPoints.Count > 2)
+            {
+                int fallbackIndex = Mathf.Clamp(displayPoints.Count / 2, 1, displayPoints.Count - 2);
+                Vector3 previousPoint = displayPoints[fallbackIndex - 1];
+                Vector3 currentPoint = displayPoints[fallbackIndex];
+                Vector3 nextPoint = displayPoints[fallbackIndex + 1];
+                CreateDecorationMarker(currentPoint, (currentPoint - previousPoint).normalized, (nextPoint - currentPoint).normalized, created);
+            }
         }
 
         private Transform CreateRibbonVisual(
@@ -468,12 +525,15 @@ namespace ZhuozhengYuan
             {
                 elapsed += Time.deltaTime;
                 float alphaMultiplier = 1f - Mathf.Clamp01(elapsed / duration);
+                Color glowColor = decorationProfile.decorationPrimaryColor;
+                Color mainColor = decorationProfile.ribbonBaseColor;
+                Color crestColor = decorationProfile.ribbonHighlightColor;
 
                 for (int index = 0; index < _segments.Count; index++)
                 {
-                    ApplyRendererAlpha(_segments[index].glowStrip, mistGuideColor.a * alphaMultiplier, mistGuideColor);
-                    ApplyRendererAlpha(_segments[index].mainStrip, idleAlpha * alphaMultiplier, mainGuideColor);
-                    ApplyRendererAlpha(_segments[index].crestStrip, Mathf.Min(1f, idleAlpha * 1.12f) * alphaMultiplier, Color.white);
+                    ApplyRendererAlpha(_segments[index].glowStrip, glowColor.a * alphaMultiplier, glowColor);
+                    ApplyRendererAlpha(_segments[index].mainStrip, idleAlpha * alphaMultiplier, mainColor);
+                    ApplyRendererAlpha(_segments[index].crestStrip, Mathf.Min(1f, idleAlpha * 1.12f) * alphaMultiplier, crestColor);
                 }
 
                 yield return null;
@@ -507,6 +567,45 @@ namespace ZhuozhengYuan
             _segments.Clear();
         }
 
+        private void CreateDecorationMarker(Vector3 point, Vector3 incoming, Vector3 outgoing, int markerIndex)
+        {
+            GameObject markerObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            markerObject.name = "DecorationMarker_" + markerIndex.ToString("00");
+            markerObject.transform.SetParent(_decorationsRoot, false);
+            markerObject.transform.position = point + Vector3.up * 0.06f;
+            markerObject.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+
+            float baseSize = Mathf.Max(0.4f, decorationProfile.decorationSize);
+            float turnAmount = Mathf.Clamp01(Vector3.Angle(incoming, outgoing) / 65f);
+            float width = baseSize * Mathf.Lerp(0.72f, 1.08f, turnAmount);
+            float length = baseSize * Mathf.Lerp(0.92f, 1.35f, turnAmount);
+            markerObject.transform.localScale = new Vector3(width, length, 1f);
+
+            Collider collider = markerObject.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Destroy(collider);
+            }
+
+            MeshRenderer renderer = markerObject.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = _decorationMaterial;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+                renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+
+                Color baseColor = Color.Lerp(decorationProfile.decorationPrimaryColor, decorationProfile.decorationSecondaryColor, markerIndex % 2 == 0 ? 0.18f : 0.62f);
+                MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(propertyBlock);
+                propertyBlock.SetColor("_Color", baseColor);
+                propertyBlock.SetColor("_BaseColor", baseColor);
+                propertyBlock.SetColor("_AccentColor", decorationProfile.ribbonHighlightColor);
+                renderer.SetPropertyBlock(propertyBlock);
+            }
+        }
+
         private void EnsureDecorationProfileInitialized()
         {
             if (decorationProfile.decorationSpacing <= 0.01f)
@@ -522,9 +621,12 @@ namespace ZhuozhengYuan
             SetStripReveal(segment.mainStrip, segment.length, reveal, guideWidth * 0.55f);
             SetStripReveal(segment.crestStrip, segment.length, reveal, guideWidth * 0.14f);
 
-            ApplyRendererAlpha(segment.glowStrip, mistGuideColor.a, mistGuideColor);
-            ApplyRendererAlpha(segment.mainStrip, idleAlpha, mainGuideColor);
-            ApplyRendererAlpha(segment.crestStrip, Mathf.Min(1f, idleAlpha * 1.12f), Color.white);
+            Color glowColor = decorationProfile.decorationPrimaryColor;
+            Color mainColor = decorationProfile.ribbonBaseColor;
+            Color crestColor = decorationProfile.ribbonHighlightColor;
+            ApplyRendererAlpha(segment.glowStrip, glowColor.a, glowColor);
+            ApplyRendererAlpha(segment.mainStrip, idleAlpha, mainColor);
+            ApplyRendererAlpha(segment.crestStrip, Mathf.Min(1f, idleAlpha * 1.12f), crestColor);
         }
 
         private static void SetStripReveal(Transform stripTransform, float fullLength, float reveal, float width)
@@ -747,6 +849,29 @@ namespace ZhuozhengYuan
             if (material.HasProperty("_GlowBoost"))
             {
                 material.SetFloat("_GlowBoost", glowBoost);
+            }
+        }
+
+        private static void ApplyMaterialMotion(Material material, float flowSpeed, float pulseSpeed, float edgeSoftness)
+        {
+            if (material == null)
+            {
+                return;
+            }
+
+            if (material.HasProperty("_FlowSpeed"))
+            {
+                material.SetFloat("_FlowSpeed", flowSpeed);
+            }
+
+            if (material.HasProperty("_PulseSpeed"))
+            {
+                material.SetFloat("_PulseSpeed", pulseSpeed);
+            }
+
+            if (material.HasProperty("_EdgeSoftness"))
+            {
+                material.SetFloat("_EdgeSoftness", edgeSoftness);
             }
         }
 
