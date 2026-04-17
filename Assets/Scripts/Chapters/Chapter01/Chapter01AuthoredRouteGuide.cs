@@ -218,6 +218,12 @@ namespace ZhuozhengYuan
             }
 
             _guideHidden = true;
+            if (_revealRoutine != null)
+            {
+                StopCoroutine(_revealRoutine);
+                _revealRoutine = null;
+            }
+
             if (_fadeRoutine != null)
             {
                 StopCoroutine(_fadeRoutine);
@@ -509,12 +515,22 @@ namespace ZhuozhengYuan
         {
             for (int index = 0; index < _segments.Count; index++)
             {
+                if (_guideHidden)
+                {
+                    yield break;
+                }
+
                 GuideSegment segment = _segments[index];
                 float duration = segment.length / Mathf.Max(4f, revealSpeed);
                 float elapsed = 0f;
 
                 while (elapsed < duration)
                 {
+                    if (_guideHidden)
+                    {
+                        yield break;
+                    }
+
                     elapsed += Time.deltaTime;
                     float t = duration <= 0.001f ? 1f : Mathf.Clamp01(elapsed / duration);
                     SetSegmentReveal(segment, t);
@@ -534,19 +550,7 @@ namespace ZhuozhengYuan
             {
                 elapsed += Time.deltaTime;
                 float alphaMultiplier = 1f - Mathf.Clamp01(elapsed / duration);
-                Color glowColor = decorationProfile.decorationPrimaryColor;
-                Color mainColor = decorationProfile.ribbonBaseColor;
-                Color crestColor = decorationProfile.ribbonHighlightColor;
-
-                for (int index = 0; index < _segments.Count; index++)
-                {
-                    ApplyRendererAlpha(_segments[index].glowStrip, glowColor.a * alphaMultiplier, glowColor);
-                    ApplyRendererAlpha(_segments[index].mainStrip, idleAlpha * alphaMultiplier, mainColor);
-                    ApplyRendererAlpha(_segments[index].crestStrip, Mathf.Min(1f, idleAlpha * 1.12f) * alphaMultiplier, crestColor);
-                }
-
-                ApplyChildRendererAlpha(_decorationsRoot, alphaMultiplier);
-                ApplyChildRendererAlpha(_destinationMarkerRoot, alphaMultiplier);
+                ApplyGuideFade(alphaMultiplier);
 
                 yield return null;
             }
@@ -616,6 +620,23 @@ namespace ZhuozhengYuan
                 propertyBlock.SetColor("_AccentColor", decorationProfile.ribbonHighlightColor);
                 renderer.SetPropertyBlock(propertyBlock);
             }
+        }
+
+        private void ApplyGuideFade(float alphaMultiplier)
+        {
+            Color glowColor = decorationProfile.decorationPrimaryColor;
+            Color mainColor = decorationProfile.ribbonBaseColor;
+            Color crestColor = decorationProfile.ribbonHighlightColor;
+
+            for (int index = 0; index < _segments.Count; index++)
+            {
+                ApplyRendererAlpha(_segments[index].glowStrip, glowColor.a * alphaMultiplier, glowColor);
+                ApplyRendererAlpha(_segments[index].mainStrip, idleAlpha * alphaMultiplier, mainColor);
+                ApplyRendererAlpha(_segments[index].crestStrip, Mathf.Min(1f, idleAlpha * 1.12f) * alphaMultiplier, crestColor);
+            }
+
+            ApplyChildRendererAlpha(_decorationsRoot, alphaMultiplier);
+            ApplyChildRendererAlpha(_destinationMarkerRoot, alphaMultiplier);
         }
 
         private void BuildDestinationMarker()

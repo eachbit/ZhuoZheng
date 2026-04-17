@@ -142,6 +142,55 @@ namespace ZhuozhengYuan.Tests.EditMode
             }
         }
 
+        [Test]
+        public void HideGuide_ShouldFadeDestinationMarkerContent()
+        {
+            Type guideType = Type.GetType("ZhuozhengYuan.Chapter01AuthoredRouteGuide, Assembly-CSharp");
+            Assert.IsNotNull(guideType, "Chapter01AuthoredRouteGuide it still missing.");
+
+            GameObject root = new GameObject("RouteGuideRoot");
+            GameObject start = null;
+            GameObject end = null;
+
+            try
+            {
+                MonoBehaviour guide = (MonoBehaviour)root.AddComponent(guideType);
+
+                start = new GameObject("Start");
+                end = new GameObject("End");
+
+                start.transform.position = new Vector3(0f, 0f, 0f);
+                end.transform.position = new Vector3(10f, 0f, 6f);
+
+                SetField(guide, "showGuideOnStart", true);
+                SetField(guide, "playerStartPose", start.transform);
+                SetField(guide, "targetGate", end.transform);
+                SetField(guide, "trimSegmentsAgainstObstacles", false);
+                SetField(guide, "groundOffset", 0f);
+
+                Invoke(guide, "RebuildGuide");
+
+                Transform marker = root.transform.Find("Chapter01AuthoredGuideRoot/DestinationMarkerRoot/DestinationMarker_Ring");
+                Assert.IsNotNull(marker, "Destination marker ring was not created.");
+
+                MeshRenderer renderer = marker.GetComponent<MeshRenderer>();
+                Assert.IsNotNull(renderer, "Destination marker renderer is missing.");
+
+                float beforeAlpha = ReadRendererAlpha(renderer);
+                Invoke(guide, "HideGuide");
+                InvokeWithArgs(guide, "ApplyGuideFade", 0.5f);
+                float afterAlpha = ReadRendererAlpha(renderer);
+
+                Assert.Less(afterAlpha, beforeAlpha, "Destination marker alpha should be reduced after guide fade.");
+            }
+            finally
+            {
+                DestroyImmediateIfExists(end);
+                DestroyImmediateIfExists(start);
+                DestroyImmediateIfExists(root);
+            }
+        }
+
         private static void SetField(object target, string fieldName, object value)
         {
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -154,6 +203,31 @@ namespace ZhuozhengYuan.Tests.EditMode
             MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.IsNotNull(method, $"Method {methodName} does not exist.");
             method.Invoke(target, Array.Empty<object>());
+        }
+
+        private static void InvokeWithArgs(object target, string methodName, params object[] args)
+        {
+            MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.IsNotNull(method, $"Method {methodName} does not exist.");
+            method.Invoke(target, args);
+        }
+
+        private static float ReadRendererAlpha(MeshRenderer renderer)
+        {
+            MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(propertyBlock);
+            Color propertyColor = propertyBlock.GetColor("_BaseColor");
+            if (propertyColor.a > 0.001f || propertyColor.maxColorComponent > 0.001f)
+            {
+                return propertyColor.a;
+            }
+
+            if (renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_BaseColor"))
+            {
+                return renderer.sharedMaterial.GetColor("_BaseColor").a;
+            }
+
+            return renderer.sharedMaterial != null ? renderer.sharedMaterial.color.a : 0f;
         }
 
         private static void DestroyImmediateIfExists(UnityEngine.Object target)
