@@ -473,8 +473,22 @@ public class Chat : MonoBehaviour
     // 设置UI
     void SetupUI()
     {
+        // 确保下一步按钮有中文文本
         if (nextButton != null)
+        {
+            TMP_Text buttonText = nextButton.GetComponentInChildren<TMP_Text>(true);
+            if (buttonText != null)
+            {
+                buttonText.text = "下一步";
+                Debug.Log("✅ SetupUI: 已设置下一步按钮文字");
+            }
+            else
+            {
+                Debug.LogError("❌ SetupUI: NextButton没有TMP_Text子组件！请在按钮下添加TextMeshPro组件");
+            }
+            
             nextButton.onClick.AddListener(OnNextButtonClick);
+        }
         
         if (choiceButtonA != null)
             choiceButtonA.onClick.AddListener(() => OnChoiceClick(0));
@@ -529,9 +543,30 @@ public class Chat : MonoBehaviour
     // 显示对话框
     void ShowDialoguePanel()
     {
-        if (dialoguePanel != null) dialoguePanel.SetActive(true);
+        Debug.Log("💬 ShowDialoguePanel: 显示对话框");
+        
+        if (dialoguePanel != null) 
+        {
+            dialoguePanel.SetActive(true);
+            Debug.Log("  ✅ 对话框已激活");
+        }
+        
+        // 确保显示下一步按钮
+        if (nextButton != null)
+        {
+            nextButton.gameObject.SetActive(true);
+            
+            // 确保按钮文本正确
+            TMP_Text buttonText = nextButton.GetComponentInChildren<TMP_Text>(true);
+            if (buttonText != null && buttonText.text != "下一步")
+            {
+                buttonText.text = "下一步";
+                Debug.Log("  ✅ 已更新按钮文本为'下一步'");
+            }
+        }
         
         // 解锁光标并显示鼠标，让玩家能点击UI
+        Debug.Log("  🖱️ 解锁光标，显示鼠标");
         LockCursor(false);
     }
     
@@ -558,7 +593,7 @@ public class Chat : MonoBehaviour
         // 严格边界检查：防止索引越界
         if (currentStage < 0 || currentStage >= stages.Length)
         {
-            Debug.LogWarning($"⚠️ currentStage 越界: {currentStage}，有效范围 0-{stages.Length - 1}");
+            Debug.LogWarning($"️ currentStage 越界: {currentStage}，有效范围 0-{stages.Length - 1}");
             EndDialogue();
             return;
         }
@@ -588,7 +623,7 @@ public class Chat : MonoBehaviour
                 // 进入下一阶段前，检查 nextStage 是否有效
                 if (stage.nextStage < 0 || stage.nextStage >= stages.Length)
                 {
-                    Debug.LogWarning($"⚠️ nextStage 无效: {stage.nextStage}，结束对话");
+                    Debug.LogWarning($"️ nextStage 无效: {stage.nextStage}，结束对话");
                     EndDialogue();
                     return;
                 }
@@ -611,34 +646,41 @@ public class Chat : MonoBehaviour
             // 递增后再次检查边界
             if (currentLineIndex >= stage.lines.Length)
             {
-                Debug.Log("📢 系统提示后阶段结束");
+                Debug.Log(" 系统提示后阶段结束");
                 // 递归调用处理阶段结束逻辑
                 ShowCurrentLine();
             }
             return;
         }
         
-        // 显示对话
-        // 根据记忆规范：若无需显示说话者名字，应隐藏UI组件，严禁设置为空字符串
-        if (string.IsNullOrEmpty(line.speaker))
+        // 显示说话者名字
+        // 确保名字显示功能正常工作
+        if (speakerNameText != null)
         {
-            // 说话者为空，隐藏名字文本
-            if (speakerNameText != null && speakerNameText.gameObject.activeSelf)
+            if (string.IsNullOrEmpty(line.speaker))
             {
-                speakerNameText.gameObject.SetActive(false);
+                // 说话者为空，隐藏名字文本
+                if (speakerNameText.gameObject.activeSelf)
+                {
+                    speakerNameText.gameObject.SetActive(false);
+                    Debug.Log($"  📝 隐藏说话者名字（空）");
+                }
+            }
+            else
+            {
+                // 说话者不为空，显示并设置名字
+                if (!speakerNameText.gameObject.activeSelf)
+                {
+                    speakerNameText.gameObject.SetActive(true);
+                    Debug.Log($"  ✅ 激活说话者名字组件");
+                }
+                speakerNameText.text = line.speaker;
+                Debug.Log($"  📝 显示说话者: {line.speaker}");
             }
         }
         else
         {
-            // 说话者不为空，显示并设置名字
-            if (speakerNameText != null)
-            {
-                if (!speakerNameText.gameObject.activeSelf)
-                {
-                    speakerNameText.gameObject.SetActive(true);
-                }
-                speakerNameText.text = line.speaker;
-            }
+            Debug.LogWarning("⚠️ speakerNameText 为 null！请在Inspector中赋值");
         }
         
         currentFullText = line.text;
@@ -683,6 +725,9 @@ public class Chat : MonoBehaviour
             currentLineIndex++;
             ShowCurrentLine();
         }
+        
+        // 保持鼠标可见（对话模式下不应该隐藏鼠标）
+        // 不移除LockCursor调用，因为我们已经在ShowDialoguePanel中解锁了
     }
     
     // 显示选项
