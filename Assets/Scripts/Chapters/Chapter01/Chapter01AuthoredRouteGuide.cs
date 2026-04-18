@@ -25,7 +25,7 @@ namespace ZhuozhengYuan
         public Transform[] routePoints;
         public bool showGuideOnStart = true;
         public bool useResolvedRouteFallback = true;
-        public float guideWidth = 2.4f;
+        public float guideWidth = 1.35f;
         public float guideThickness = 0.04f;
         public float groundOffset = 0.08f;
         public float sampleSpacing = 1.2f;

@@ -25,6 +25,11 @@ namespace ZhuozhengYuan
         public string flowHintSouthRejected = "\u5357\u6e20\u6709\u6c34\u58f0\u5374\u6ca1\u6709\u805a\u5230\u4e2d\u6c60\uff0c\u8fd9\u6761\u8def\u4e0d\u5bf9\u3002";
         public string flowHintAllRejected = "\u4e24\u6761\u65c1\u8def\u90fd\u4e0d\u901a\uff0c\u771f\u6b63\u7684\u6d3b\u6c34\u5e94\u56de\u5230\u4e2d\u6c60\u3002";
         public string flowHintCorrect = "\u4e2d\u6c60\u6df1\u5904\u4f20\u6765\u56de\u54cd\uff0c\u6c34\u8109\u88ab\u63a5\u901a\u4e86\u3002";
+        public string chapter02RouteGuideObjectName = "Chapter01ToChapter02RouteGuide";
+        public string chapter02RouteGuideRootName = "Chapter01ToChapter02GuidePath";
+        public float chapter02RouteGuideReachedRadius = 4f;
+        public int chapter02RouteGuideMaxDecorations = 6;
+        public int chapter02RouteGuideAutoPointCount = 4;
 
         public KeyCode gateRotateNegativeKey = KeyCode.A;
         public KeyCode gateRotatePositiveKey = KeyCode.D;
@@ -48,6 +53,7 @@ namespace ZhuozhengYuan
         private int _directionCycleIndex = -1;
         private int _rejectedDirectionMask;
         private GateInteractable _activeGatePuzzle;
+        private Transform _chapter02RouteGuideRoot;
 
         private void Update()
         {
@@ -222,6 +228,8 @@ namespace ZhuozhengYuan
                 return;
             }
 
+            Vector3 pagePickupPosition = pickupInteractable.transform.position;
+
             _pageCollected = true;
             CurrentState = Chapter01State.Completed;
             pickupInteractable.SetAvailability(false);
@@ -234,7 +242,23 @@ namespace ZhuozhengYuan
             manager.AddCollectedPages(1);
             ApplyRuntimeState();
             WriteBackSaveState();
+            ShowChapter02RouteGuide(pagePickupPosition);
             manager.SaveProgress();
+        }
+
+        public static bool TryResolveChapter02GuideTarget(Chapter02Director chapter02Director, out Vector3 targetPosition)
+        {
+            targetPosition = Vector3.zero;
+            if (chapter02Director == null)
+            {
+                return false;
+            }
+
+            Collider triggerCollider = chapter02Director.GetComponent<Collider>();
+            targetPosition = triggerCollider != null
+                ? triggerCollider.bounds.center
+                : chapter02Director.transform.position;
+            return true;
         }
 
         private void HandleGatePuzzleInput()
@@ -521,6 +545,159 @@ namespace ZhuozhengYuan
             manager.CurrentSaveData.selectedFlowDirection = _selectedDirection;
             manager.CurrentSaveData.chapter01RejectedFlowDirections = _rejectedDirectionMask;
             manager.CurrentSaveData.chapter01PageCollected = _pageCollected;
+        }
+
+        private void ShowChapter02RouteGuide(Vector3 pagePickupPosition)
+        {
+            if (manager == null || manager.CurrentSaveData == null || manager.CurrentSaveData.chapter02State == Chapter02State.Completed)
+            {
+                return;
+            }
+
+            Chapter02Director chapter02Director = manager.chapter02Director != null
+                ? manager.chapter02Director
+                : FindObjectOfType<Chapter02Director>();
+            if (!TryResolveChapter02GuideTarget(chapter02Director, out Vector3 chapter02TargetPosition))
+            {
+                return;
+            }
+
+            DestroyChapter02RouteGuide();
+
+            GameObject routeGuideObject = new GameObject(string.IsNullOrWhiteSpace(chapter02RouteGuideObjectName)
+                ? "Chapter01ToChapter02RouteGuide"
+                : chapter02RouteGuideObjectName);
+            _chapter02RouteGuideRoot = routeGuideObject.transform;
+            _chapter02RouteGuideRoot.SetParent(transform, false);
+
+            Transform startMarker = CreateRouteGuideMarker("PagePickupStart", _chapter02RouteGuideRoot, pagePickupPosition);
+            Transform targetMarker = CreateRouteGuideMarker("Chapter02QuizTarget", _chapter02RouteGuideRoot, chapter02TargetPosition);
+            Transform[] routeMarkers = ResolveChapter02RouteMarkers(pagePickupPosition, chapter02TargetPosition, _chapter02RouteGuideRoot);
+
+            Chapter01AuthoredRouteGuide routeGuide = routeGuideObject.AddComponent<Chapter01AuthoredRouteGuide>();
+            routeGuide.manager = manager;
+            routeGuide.director = null;
+            routeGuide.introController = null;
+            routeGuide.playerStartPose = startMarker;
+            routeGuide.targetGate = targetMarker;
+            routeGuide.authoredRouteRootName = chapter02RouteGuideRootName;
+            routeGuide.routePoints = routeMarkers;
+            routeGuide.showGuideOnStart = true;
+            routeGuide.useResolvedRouteFallback = false;
+            routeGuide.smoothControlPoints = true;
+            routeGuide.reachedRadius = Mathf.Max(1.5f, chapter02RouteGuideReachedRadius);
+            routeGuide.maxDecorationMarkers = Mathf.Max(1, chapter02RouteGuideMaxDecorations);
+            routeGuide.RebuildGuide();
+        }
+
+        private Transform[] ResolveChapter02RouteMarkers(Vector3 startPosition, Vector3 targetPosition, Transform fallbackParent)
+        {
+            Transform authoredRoot = FindChapter02RouteRoot();
+            if (authoredRoot != null)
+            {
+                Transform[] authoredMarkers = new Transform[authoredRoot.childCount];
+                for (int index = 0; index < authoredRoot.childCount; index++)
+                {
+                    authoredMarkers[index] = authoredRoot.GetChild(index);
+                }
+
+                Array.Sort(authoredMarkers, (left, right) => string.CompareOrdinal(left.name, right.name));
+                if (authoredMarkers.Length > 0)
+                {
+                    return authoredMarkers;
+                }
+            }
+
+            return CreateChapter02FallbackRouteMarkers(startPosition, targetPosition, fallbackParent);
+        }
+
+        private Transform[] CreateChapter02FallbackRouteMarkers(Vector3 startPosition, Vector3 targetPosition, Transform fallbackParent)
+        {
+            int pointCount = Mathf.Max(4, chapter02RouteGuideAutoPointCount);
+            Transform[] markers = new Transform[pointCount];
+            Vector3 flatDelta = targetPosition - startPosition;
+            flatDelta.y = 0f;
+
+            Vector3 forward = flatDelta.sqrMagnitude > 0.01f
+                ? flatDelta.normalized
+                : Vector3.forward;
+            Vector3 side = Vector3.Cross(Vector3.up, forward);
+            if (side.sqrMagnitude < 0.001f)
+            {
+                side = Vector3.right;
+            }
+            side.Normalize();
+
+            float routeLength = flatDelta.magnitude;
+            float bendOffset = Mathf.Clamp(routeLength * 0.12f, 1.2f, 6f);
+
+            for (int index = 0; index < pointCount; index++)
+            {
+                float t = (index + 1f) / (pointCount + 1f);
+                float centeredT = (t - 0.5f) * 2f;
+                float sideSign = index < pointCount * 0.5f ? 1f : -1f;
+                float offsetStrength = 0.55f + (1f - Mathf.Abs(centeredT)) * 0.45f;
+                Vector3 markerPosition = Vector3.Lerp(startPosition, targetPosition, t) + side * sideSign * bendOffset * offsetStrength;
+                markers[index] = CreateRouteGuideMarker("AutoRoutePoint_" + index.ToString("00"), fallbackParent, markerPosition);
+            }
+
+            return markers;
+        }
+
+        private Transform FindChapter02RouteRoot()
+        {
+            if (string.IsNullOrWhiteSpace(chapter02RouteGuideRootName))
+            {
+                return null;
+            }
+
+            Transform localRoot = transform.Find(chapter02RouteGuideRootName);
+            if (localRoot != null)
+            {
+                return localRoot;
+            }
+
+            GameObject rootObject = GameObject.Find(chapter02RouteGuideRootName);
+            return rootObject != null ? rootObject.transform : null;
+        }
+
+        private static Transform CreateRouteGuideMarker(string markerName, Transform parent, Vector3 position)
+        {
+            GameObject markerObject = new GameObject(markerName);
+            Transform marker = markerObject.transform;
+            marker.SetParent(parent, false);
+            marker.position = position;
+            return marker;
+        }
+
+        private void DestroyChapter02RouteGuide()
+        {
+            if (_chapter02RouteGuideRoot == null)
+            {
+                Transform existingRoot = transform.Find(string.IsNullOrWhiteSpace(chapter02RouteGuideObjectName)
+                    ? "Chapter01ToChapter02RouteGuide"
+                    : chapter02RouteGuideObjectName);
+                if (existingRoot != null)
+                {
+                    _chapter02RouteGuideRoot = existingRoot;
+                }
+            }
+
+            if (_chapter02RouteGuideRoot == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(_chapter02RouteGuideRoot.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(_chapter02RouteGuideRoot.gameObject);
+            }
+
+            _chapter02RouteGuideRoot = null;
         }
 
         private string SelectNextDirection()

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class Guide : MonoBehaviour
@@ -70,20 +71,32 @@ public class Guide : MonoBehaviour
             if (rect != null)
             {
                 // 设置在屏幕顶部居中
-                rect.anchorMin = new Vector2(0.25f, 0.75f);
-                rect.anchorMax = new Vector2(0.75f, 0.85f);
+                rect.anchorMin = new Vector2(0.22f, 0.72f);
+                rect.anchorMax = new Vector2(0.78f, 0.88f);
                 rect.anchoredPosition = Vector2.zero;
                 rect.sizeDelta = Vector2.zero;
             }
+
+            Chapter04PlaqueFrame.ApplySoftPanel(weatherPromptPanel);
         }
         
         // 设置文本样式
         if (weatherPromptText != null)
         {
-            weatherPromptText.fontSize = 22;
+            RectTransform textRect = weatherPromptText.GetComponent<RectTransform>();
+            if (textRect != null)
+            {
+                textRect.anchorMin = new Vector2(0.06f, 0.18f);
+                textRect.anchorMax = new Vector2(0.94f, 0.82f);
+                textRect.offsetMin = Vector2.zero;
+                textRect.offsetMax = Vector2.zero;
+            }
+
+            weatherPromptText.fontSize = 18;
             weatherPromptText.alignment = TextAlignmentOptions.Center;
             weatherPromptText.enableWordWrapping = true;
-            weatherPromptText.lineSpacing = 1.2f;
+            weatherPromptText.overflowMode = TextOverflowModes.Truncate;
+            weatherPromptText.lineSpacing = 0.85f;
         }
     }
     

@@ -56,6 +56,48 @@ namespace ZhuozhengYuan.Tests.EditMode
         }
 
         [Test]
+        public void RebuildGuide_ShouldUseNarrowRibbonWidths()
+        {
+            Type guideType = Type.GetType("ZhuozhengYuan.Chapter01AuthoredRouteGuide, Assembly-CSharp");
+            Assert.IsNotNull(guideType, "Chapter01AuthoredRouteGuide it still missing.");
+
+            GameObject root = new GameObject("RouteGuideRoot");
+            GameObject start = null;
+            GameObject end = null;
+
+            try
+            {
+                MonoBehaviour guide = (MonoBehaviour)root.AddComponent(guideType);
+
+                start = new GameObject("Start");
+                end = new GameObject("End");
+                start.transform.position = Vector3.zero;
+                end.transform.position = new Vector3(8f, 0f, 0f);
+
+                SetField(guide, "showGuideOnStart", true);
+                SetField(guide, "playerStartPose", start.transform);
+                SetField(guide, "targetGate", end.transform);
+                SetField(guide, "trimSegmentsAgainstObstacles", false);
+                SetField(guide, "groundOffset", 0f);
+
+                Invoke(guide, "RebuildGuide");
+
+                Transform segment = root.transform.Find("Chapter01AuthoredGuideRoot/GuideSegment_00");
+                Assert.IsNotNull(segment, "GuideSegment_00 was not created.");
+
+                Assert.LessOrEqual(segment.Find("Glow").localScale.x, 1.65f, "Glow strip should be narrower than the previous broad guide.");
+                Assert.LessOrEqual(segment.Find("Main").localScale.x, 0.75f, "Main strip should stay visually slim.");
+                Assert.LessOrEqual(segment.Find("Crest").localScale.x, 0.2f, "Crest strip should remain a thin highlight.");
+            }
+            finally
+            {
+                DestroyImmediateIfExists(end);
+                DestroyImmediateIfExists(start);
+                DestroyImmediateIfExists(root);
+            }
+        }
+
+        [Test]
         public void RebuildGuide_ShouldCreateLimitedDecorationMarkers()
         {
             Type guideType = Type.GetType("ZhuozhengYuan.Chapter01AuthoredRouteGuide, Assembly-CSharp");
@@ -191,6 +233,72 @@ namespace ZhuozhengYuan.Tests.EditMode
             }
         }
 
+        [Test]
+        public void TryResolveChapter02GuideTarget_ShouldUseTriggerColliderCenter()
+        {
+            Type chapter01DirectorType = Type.GetType("ZhuozhengYuan.Chapter01Director, Assembly-CSharp");
+            Type chapter02DirectorType = Type.GetType("ZhuozhengYuan.Chapter02Director, Assembly-CSharp");
+            Assert.IsNotNull(chapter01DirectorType, "Chapter01Director is still missing.");
+            Assert.IsNotNull(chapter02DirectorType, "Chapter02Director is still missing.");
+
+            GameObject target = new GameObject("Chapter02Trigger");
+
+            try
+            {
+                BoxCollider trigger = target.AddComponent<BoxCollider>();
+                MonoBehaviour chapter02Director = (MonoBehaviour)target.AddComponent(chapter02DirectorType);
+                target.transform.position = new Vector3(4f, 1f, 6f);
+                trigger.center = new Vector3(2f, 0f, -1f);
+
+                MethodInfo method = chapter01DirectorType.GetMethod("TryResolveChapter02GuideTarget", BindingFlags.Static | BindingFlags.Public);
+                Assert.IsNotNull(method, "TryResolveChapter02GuideTarget should stay public for route target tests.");
+
+                object[] arguments = { chapter02Director, Vector3.zero };
+                bool resolved = (bool)method.Invoke(null, arguments);
+                Vector3 targetPosition = (Vector3)arguments[1];
+
+                Assert.IsTrue(resolved, "Chapter 2 guide target should resolve when the chapter 2 trigger exists.");
+                Assert.AreEqual(trigger.bounds.center.x, targetPosition.x, 0.001f);
+                Assert.AreEqual(trigger.bounds.center.y, targetPosition.y, 0.001f);
+                Assert.AreEqual(trigger.bounds.center.z, targetPosition.z, 0.001f);
+            }
+            finally
+            {
+                DestroyImmediateIfExists(target);
+            }
+        }
+
+        [Test]
+        public void ResolveChapter02RouteMarkers_ShouldCreateFourCurvedFallbackPoints()
+        {
+            Type directorType = Type.GetType("ZhuozhengYuan.Chapter01Director, Assembly-CSharp");
+            Assert.IsNotNull(directorType, "Chapter01Director is still missing.");
+
+            GameObject directorObject = new GameObject("Chapter01Director");
+            GameObject markerRoot = new GameObject("MarkerRoot");
+
+            try
+            {
+                MonoBehaviour director = (MonoBehaviour)directorObject.AddComponent(directorType);
+                markerRoot.transform.SetParent(directorObject.transform, false);
+
+                MethodInfo method = directorType.GetMethod("ResolveChapter02RouteMarkers", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsNotNull(method, "ResolveChapter02RouteMarkers should exist for the post-page guide.");
+
+                Vector3 start = new Vector3(0f, 0f, 0f);
+                Vector3 target = new Vector3(20f, 0f, 0f);
+                Transform[] markers = (Transform[])method.Invoke(director, new object[] { start, target, markerRoot.transform });
+
+                Assert.AreEqual(4, markers.Length, "The fallback route should use four intermediate guide points.");
+                Assert.IsTrue(HasPointOffStraightLine(markers, start, target), "The fallback points should bend the guide instead of forming one straight line.");
+            }
+            finally
+            {
+                DestroyImmediateIfExists(markerRoot);
+                DestroyImmediateIfExists(directorObject);
+            }
+        }
+
         private static void SetField(object target, string fieldName, object value)
         {
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -228,6 +336,31 @@ namespace ZhuozhengYuan.Tests.EditMode
             }
 
             return renderer.sharedMaterial != null ? renderer.sharedMaterial.color.a : 0f;
+        }
+
+        private static bool HasPointOffStraightLine(Transform[] markers, Vector3 start, Vector3 target)
+        {
+            Vector3 route = target - start;
+            route.y = 0f;
+            float routeLength = route.magnitude;
+            if (routeLength < 0.001f)
+            {
+                return false;
+            }
+
+            Vector3 routeDirection = route / routeLength;
+            for (int index = 0; index < markers.Length; index++)
+            {
+                Vector3 offset = markers[index].position - start;
+                offset.y = 0f;
+                Vector3 projected = routeDirection * Vector3.Dot(offset, routeDirection);
+                if ((offset - projected).magnitude > 0.2f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void DestroyImmediateIfExists(UnityEngine.Object target)

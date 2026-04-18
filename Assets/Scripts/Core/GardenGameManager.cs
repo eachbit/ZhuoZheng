@@ -233,6 +233,17 @@ namespace ZhuozhengYuan
             _chapter01Presenter?.ShowToast(message, duration);
         }
 
+        public void ShowPageReward(string title, string message, float duration = 3.4f)
+        {
+            if (_chapter01Presenter != null)
+            {
+                _chapter01Presenter.ShowPageReward(title, message, duration);
+                return;
+            }
+
+            ShowToast((title ?? string.Empty) + "\n" + (message ?? string.Empty), duration);
+        }
+
         public void ShowDirectionResult(string title, string message, Color accentColor, float duration = 2.6f)
         {
             _chapter01Presenter?.ShowDirectionResult(title, message, accentColor, duration);
@@ -303,6 +314,11 @@ namespace ZhuozhengYuan
         {
             CurrentSaveData.collectedPages = Mathf.Clamp(CurrentSaveData.collectedPages + amount, 0, totalPages);
 
+            RefreshCollectedPagesDisplay();
+        }
+
+        public void RefreshCollectedPagesDisplay()
+        {
             _chapter01Presenter?.SetPageCount(CurrentSaveData.collectedPages, totalPages);
         }
 
@@ -439,6 +455,22 @@ namespace ZhuozhengYuan
 
         private IChapter02QuizPresenter ResolveChapter02QuizPresenter()
         {
+            if (chapter01CanvasUI == null)
+            {
+                chapter01CanvasUI = FindObjectOfType<Chapter01CanvasUI>(true);
+            }
+
+            if (chapter01CanvasUI == null)
+            {
+                chapter01CanvasUI = Chapter01CanvasUI.CreateDefault();
+                chapter01CanvasUI.gameManager = this;
+            }
+
+            if (chapter01CanvasUI is IChapter02QuizPresenter chapter02CanvasPresenter)
+            {
+                return chapter02CanvasPresenter;
+            }
+
             if (runtimeUI is IChapter02QuizPresenter runtimeQuizPresenter)
             {
                 return runtimeQuizPresenter;

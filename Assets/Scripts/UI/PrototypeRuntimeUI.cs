@@ -96,6 +96,11 @@ namespace ZhuozhengYuan
             _toastUntilTime = Time.unscaledTime + duration;
         }
 
+        public void ShowPageReward(string title, string message, float duration = 3.4f)
+        {
+            ShowToast((title ?? string.Empty) + "\n" + (message ?? string.Empty), duration);
+        }
+
         public void ShowDirectionResult(string title, string message, Color accentColor, float duration = 2.6f)
         {
             _directionResultTitle = title ?? string.Empty;

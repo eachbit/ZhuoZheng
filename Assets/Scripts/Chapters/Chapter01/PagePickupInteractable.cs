@@ -6,9 +6,22 @@ namespace ZhuozhengYuan
     {
         public Chapter01Director director;
         public string pageDisplayName = "\u300a\u957f\u7269\u5fd7\u300b\u6b8b\u9875";
+        public bool useEnhancedPageVisual = true;
+        public GameObject enhancedPageModel;
+
+        [SerializeField]
+        private Chapter01PageVisualEnhancer visualEnhancer;
 
         [SerializeField]
         private bool isAvailable;
+
+        private void Awake()
+        {
+            if (useEnhancedPageVisual)
+            {
+                EnsureVisualEnhancer()?.SetVisible(isAvailable);
+            }
+        }
 
         public bool CanInteract(PlayerInteractor interactor)
         {
@@ -39,7 +52,48 @@ namespace ZhuozhengYuan
         public void SetAvailability(bool available)
         {
             isAvailable = available;
-            gameObject.SetActive(available);
+            if (available)
+            {
+                gameObject.SetActive(true);
+                if (useEnhancedPageVisual)
+                {
+                    EnsureVisualEnhancer()?.SetVisible(true);
+                }
+            }
+            else
+            {
+                if (visualEnhancer != null)
+                {
+                    visualEnhancer.SetVisible(false);
+                }
+
+                gameObject.SetActive(false);
+            }
+        }
+
+        private Chapter01PageVisualEnhancer EnsureVisualEnhancer()
+        {
+            if (!useEnhancedPageVisual)
+            {
+                return null;
+            }
+
+            if (visualEnhancer == null)
+            {
+                visualEnhancer = GetComponent<Chapter01PageVisualEnhancer>();
+            }
+
+            if (visualEnhancer == null)
+            {
+                visualEnhancer = gameObject.AddComponent<Chapter01PageVisualEnhancer>();
+            }
+
+            if (enhancedPageModel != null)
+            {
+                visualEnhancer.externalPageModel = enhancedPageModel;
+            }
+
+            return visualEnhancer;
         }
     }
 }

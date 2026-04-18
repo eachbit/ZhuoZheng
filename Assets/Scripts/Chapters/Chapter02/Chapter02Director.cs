@@ -16,6 +16,8 @@ namespace ZhuozhengYuan
         public string objectiveCompleted = "\u7b2c\u4e8c\u7ae0\u8282\u7b54\u9898\u5b8c\u6210\uff0c\u524d\u65b9\u9053\u8def\u5df2\u5f00\u542f\u3002";
         public string quizStartedToast = "\u4f60\u5df2\u8fdb\u5165\u5c0f\u98de\u8679\u7b54\u9898\u73af\u8282\u3002";
         public string unlockToast = "\u56db\u9898\u5168\u90e8\u7b54\u5bf9\uff0c\u524d\u65b9\u9053\u8def\u5df2\u5f00\u542f\u3002";
+        public string pageRewardTitle = "\u83b7\u5f97\u6b8b\u9875";
+        public string pageRewardMessage = "\u5df2\u83b7\u5f97\u300a\u957f\u7269\u5fd7\u300b\u7b2c\u4e8c\u5f20\u6b8b\u9875";
         public string progressFormat = "\u7b54\u9898\u8fdb\u5ea6 {0}/{1}";
         public bool startWhenPlayerEntersTrigger = true;
         public bool disableTriggerAfterCompletion = true;
@@ -204,6 +206,11 @@ namespace ZhuozhengYuan
             {
                 manager.HideChapter02Quiz();
                 manager.ShowToast(unlockToast, 2.8f);
+                if (TryAwardChapter02Page(manager.CurrentSaveData, manager.totalPages))
+                {
+                    manager.RefreshCollectedPagesDisplay();
+                    manager.ShowPageReward(pageRewardTitle, pageRewardMessage, 3.8f);
+                }
             }
 
             WriteBackSaveState();
@@ -292,6 +299,18 @@ namespace ZhuozhengYuan
             return saveData.leftGateOpened
                 && saveData.rightGateOpened
                 && !string.IsNullOrWhiteSpace(saveData.selectedFlowDirection);
+        }
+
+        private static bool TryAwardChapter02Page(SaveData saveData, int totalPages)
+        {
+            if (saveData == null || saveData.chapter02PageCollected)
+            {
+                return false;
+            }
+
+            saveData.chapter02PageCollected = true;
+            saveData.collectedPages = Mathf.Clamp(saveData.collectedPages + 1, 0, Mathf.Max(1, totalPages));
+            return true;
         }
 
         private void WriteBackSaveState()

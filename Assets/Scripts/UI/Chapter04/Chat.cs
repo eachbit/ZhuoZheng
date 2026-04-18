@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using ZhuozhengYuan;
 
 public class Chat : MonoBehaviour
 {
@@ -165,12 +166,14 @@ public class Chat : MonoBehaviour
             RectTransform rect = dialoguePanel.GetComponent<RectTransform>();
             if (rect != null)
             {
-                rect.anchorMin = new Vector2(0.05f, 0.05f);
-                rect.anchorMax = new Vector2(0.95f, 0.35f);
+                rect.anchorMin = new Vector2(0.12f, 0.06f);
+                rect.anchorMax = new Vector2(0.88f, 0.31f);
                 rect.anchoredPosition = Vector2.zero;
                 rect.sizeDelta = Vector2.zero;
             }
             
+            Chapter04PlaqueFrame.ApplyPanel(dialoguePanel);
+
             // 设置对话框内部组件位置
             SetupDialoguePanelLayout(dialoguePanel);
         }
@@ -187,6 +190,8 @@ public class Chat : MonoBehaviour
                 rect.sizeDelta = Vector2.zero;
             }
             
+            Chapter04PlaqueFrame.ApplyPanel(choicesPanel);
+
             // 设置选项面板内部按钮布局
             SetupChoicesPanelLayout(choicesPanel);
         }
@@ -197,10 +202,33 @@ public class Chat : MonoBehaviour
             RectTransform rect = systemPromptPanel.GetComponent<RectTransform>();
             if (rect != null)
             {
-                rect.anchorMin = new Vector2(0.25f, 0.75f);
-                rect.anchorMax = new Vector2(0.75f, 0.85f);
+                rect.anchorMin = new Vector2(0.18f, 0.68f);
+                rect.anchorMax = new Vector2(0.82f, 0.88f);
                 rect.anchoredPosition = Vector2.zero;
                 rect.sizeDelta = Vector2.zero;
+            }
+
+            Chapter04PlaqueFrame.ApplySoftPanel(systemPromptPanel);
+
+            if (systemPromptText != null)
+            {
+                RectTransform textRect = systemPromptText.GetComponent<RectTransform>();
+                if (textRect != null)
+                {
+                    textRect.anchorMin = new Vector2(0.06f, 0.18f);
+                    textRect.anchorMax = new Vector2(0.94f, 0.82f);
+                    textRect.offsetMin = Vector2.zero;
+                    textRect.offsetMax = Vector2.zero;
+                }
+
+                systemPromptText.fontSize = 20;
+                systemPromptText.enableAutoSizing = true;
+                systemPromptText.fontSizeMin = 12;
+                systemPromptText.fontSizeMax = 20;
+                systemPromptText.alignment = TextAlignmentOptions.Center;
+                systemPromptText.enableWordWrapping = true;
+                systemPromptText.overflowMode = TextOverflowModes.Truncate;
+                systemPromptText.lineSpacing = 0.82f;
             }
         }
         
@@ -210,10 +238,33 @@ public class Chat : MonoBehaviour
             RectTransform rect = itemGetPanel.GetComponent<RectTransform>();
             if (rect != null)
             {
-                rect.anchorMin = new Vector2(0.3f, 0.45f);
-                rect.anchorMax = new Vector2(0.7f, 0.55f);
+                rect.anchorMin = new Vector2(0.24f, 0.38f);
+                rect.anchorMax = new Vector2(0.76f, 0.62f);
                 rect.anchoredPosition = Vector2.zero;
                 rect.sizeDelta = Vector2.zero;
+            }
+
+            Chapter04PlaqueFrame.ApplyPanel(itemGetPanel);
+
+            if (itemGetText != null)
+            {
+                RectTransform textRect = itemGetText.GetComponent<RectTransform>();
+                if (textRect != null)
+                {
+                    textRect.anchorMin = new Vector2(0.08f, 0.18f);
+                    textRect.anchorMax = new Vector2(0.92f, 0.82f);
+                    textRect.offsetMin = Vector2.zero;
+                    textRect.offsetMax = Vector2.zero;
+                }
+
+                itemGetText.fontSize = 24;
+                itemGetText.enableAutoSizing = true;
+                itemGetText.fontSizeMin = 16;
+                itemGetText.fontSizeMax = 24;
+                itemGetText.alignment = TextAlignmentOptions.Center;
+                itemGetText.enableWordWrapping = true;
+                itemGetText.overflowMode = TextOverflowModes.Truncate;
+                itemGetText.lineSpacing = 0.85f;
             }
         }
     }
@@ -231,8 +282,8 @@ public class Chat : MonoBehaviour
             RectTransform rect = speakerNameText.GetComponent<RectTransform>();
             if (rect != null)
             {
-                rect.anchorMin = new Vector2(0.02f, 0.75f);
-                rect.anchorMax = new Vector2(0.98f, 0.95f);
+                rect.anchorMin = new Vector2(0.06f, 0.72f);
+                rect.anchorMax = new Vector2(0.94f, 0.92f);
                 rect.anchoredPosition = Vector2.zero;
                 rect.sizeDelta = Vector2.zero;
                 
@@ -250,8 +301,8 @@ public class Chat : MonoBehaviour
             RectTransform rect = dialogueText.GetComponent<RectTransform>();
             if (rect != null)
             {
-                rect.anchorMin = new Vector2(0.02f, 0.2f);
-                rect.anchorMax = new Vector2(0.98f, 0.7f);
+                rect.anchorMin = new Vector2(0.06f, 0.26f);
+                rect.anchorMax = new Vector2(0.94f, 0.66f);
                 rect.anchoredPosition = Vector2.zero;
                 rect.sizeDelta = Vector2.zero;
                 
@@ -270,8 +321,8 @@ public class Chat : MonoBehaviour
             RectTransform rect = nextButton.GetComponent<RectTransform>();
             if (rect != null)
             {
-                rect.anchorMin = new Vector2(0.75f, 0.05f);
-                rect.anchorMax = new Vector2(0.98f, 0.18f);
+                rect.anchorMin = new Vector2(0.72f, 0.08f);
+                rect.anchorMax = new Vector2(0.90f, 0.24f);
                 rect.anchoredPosition = Vector2.zero;
                 rect.sizeDelta = Vector2.zero;
                 
@@ -279,9 +330,20 @@ public class Chat : MonoBehaviour
                 TMP_Text buttonText = nextButton.GetComponentInChildren<TMP_Text>(true);
                 if (buttonText != null)
                 {
+                    RectTransform textRect = buttonText.GetComponent<RectTransform>();
+                    if (textRect != null)
+                    {
+                        textRect.anchorMin = new Vector2(0.08f, 0.12f);
+                        textRect.anchorMax = new Vector2(0.92f, 0.88f);
+                        textRect.offsetMin = Vector2.zero;
+                        textRect.offsetMax = Vector2.zero;
+                    }
+
                     buttonText.text = "下一步";
-                    buttonText.fontSize = 18;
+                    buttonText.fontSize = 22;
                     buttonText.alignment = TextAlignmentOptions.Center;
+                    buttonText.color = new Color(0.93f, 0.82f, 0.52f, 1f);
+                    buttonText.fontStyle = FontStyles.Bold;
                     buttonText.enableWordWrapping = true;
                     Debug.Log("✅ 已设置下一步按钮文字");
                 }
@@ -290,6 +352,8 @@ public class Chat : MonoBehaviour
                     Debug.LogWarning("⚠️ 未找到NextButton的子TMP_Text组件！请检查按钮结构");
                 }
             }
+
+            Chapter04PlaqueFrame.ApplyButton(nextButton.gameObject);
         }
     }
     
@@ -324,6 +388,8 @@ public class Chat : MonoBehaviour
                     Debug.LogWarning("⚠️ 未找到ChoiceButtonA的子TMP_Text组件！");
                 }
             }
+
+            Chapter04PlaqueFrame.ApplyButton(choiceButtonA.gameObject);
         }
         
         // 设置选项按钮B - 下方
@@ -352,6 +418,8 @@ public class Chat : MonoBehaviour
                     Debug.LogWarning("⚠️ 未找到ChoiceButtonB的子TMP_Text组件！");
                 }
             }
+
+            Chapter04PlaqueFrame.ApplyButton(choiceButtonB.gameObject);
         }
     }
     
@@ -775,10 +843,41 @@ public class Chat : MonoBehaviour
         if (itemGetPanel != null && itemGetText != null)
         {
             itemGetText.text = "获得《长物志》残页 ×1\n（收集进度：4/5）";
+            AwardChapter04PageToManager();
             itemGetPanel.SetActive(true);
             
             StartCoroutine(HideItemGetPanelAfterDelay());
         }
+    }
+
+    void AwardChapter04PageToManager()
+    {
+        GardenGameManager manager = GardenGameManager.Instance != null
+            ? GardenGameManager.Instance
+            : FindObjectOfType<GardenGameManager>();
+
+        if (manager == null || manager.CurrentSaveData == null)
+        {
+            return;
+        }
+
+        if (TryAwardChapter04Page(manager.CurrentSaveData, manager.totalPages))
+        {
+            manager.RefreshCollectedPagesDisplay();
+            manager.SaveProgress();
+        }
+    }
+
+    static bool TryAwardChapter04Page(SaveData saveData, int totalPages)
+    {
+        if (saveData == null || saveData.chapter04PageCollected)
+        {
+            return false;
+        }
+
+        saveData.chapter04PageCollected = true;
+        saveData.collectedPages = Mathf.Clamp(Mathf.Max(saveData.collectedPages, 4), 0, Mathf.Max(4, totalPages));
+        return true;
     }
     
     // 延迟隐藏物品获得面板

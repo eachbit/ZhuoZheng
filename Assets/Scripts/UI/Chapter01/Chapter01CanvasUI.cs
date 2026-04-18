@@ -10,7 +10,7 @@ using UnityEditor;
 
 namespace ZhuozhengYuan
 {
-    public class Chapter01CanvasUI : MonoBehaviour, IChapter01RuntimeUIPresenter
+    public class Chapter01CanvasUI : MonoBehaviour, IChapter01RuntimeUIPresenter, IChapter02QuizPresenter
     {
         public GardenGameManager gameManager;
 
@@ -31,6 +31,10 @@ namespace ZhuozhengYuan
         public Image resultAccent;
         public TextMeshProUGUI resultTitleText;
         public TextMeshProUGUI resultBodyText;
+        public GameObject pageRewardPanel;
+        public Image pageRewardAccent;
+        public TextMeshProUGUI pageRewardTitleText;
+        public TextMeshProUGUI pageRewardBodyText;
 
         [Header("Dialogue")]
         public GameObject dialoguePanel;
@@ -56,6 +60,15 @@ namespace ZhuozhengYuan
         public Button gateCalibrationConfirmButton;
         public TextMeshProUGUI gateCalibrationConfirmButtonText;
 
+        [Header("Chapter 02 Quiz")]
+        public GameObject chapter02QuizPanel;
+        public TextMeshProUGUI chapter02QuizTitleText;
+        public TextMeshProUGUI chapter02QuizProgressText;
+        public TextMeshProUGUI chapter02QuizQuestionText;
+        public Button[] chapter02QuizButtons;
+        public TextMeshProUGUI[] chapter02QuizOptionTexts;
+        public TextMeshProUGUI chapter02QuizHintText;
+
         [Header("Fade")]
         public CanvasGroup fadeCanvasGroup;
 
@@ -72,8 +85,12 @@ namespace ZhuozhengYuan
         private bool _isDirectionChoiceOpen;
         private string[] _directionOptions = Array.Empty<string>();
         private Action<string> _directionSelectedCallback;
+        private bool _isChapter02QuizOpen;
+        private string[] _chapter02QuizOptions = Array.Empty<string>();
+        private Action<int> _chapter02QuizSelectedCallback;
         private Coroutine _toastCoroutine;
         private Coroutine _resultCoroutine;
+        private Coroutine _pageRewardCoroutine;
         private Canvas _canvas;
         private static readonly Color PanelInkColor = new Color(0.065f, 0.105f, 0.08f, 0.78f);
         private static readonly Color PanelInkSoftColor = new Color(0.075f, 0.12f, 0.085f, 0.66f);
@@ -111,9 +128,11 @@ namespace ZhuozhengYuan
             ui.WireButtons();
             ui.HideToastImmediate();
             ui.HideResultImmediate();
+            ui.HidePageRewardImmediate();
             ui.HideDialogueImmediate();
             ui.HideDirectionChoiceImmediate();
             ui.HideGateCalibration();
+            ui.HideChapter02QuizImmediate();
             return ui;
         }
 
@@ -154,9 +173,11 @@ namespace ZhuozhengYuan
             WireButtons();
             HideToastImmediate();
             HideResultImmediate();
+            HidePageRewardImmediate();
             HideDialogueImmediate();
             HideDirectionChoiceImmediate();
             HideGateCalibration();
+            HideChapter02QuizImmediate();
             SetFadeAlpha(0f);
         }
 
@@ -179,16 +200,21 @@ namespace ZhuozhengYuan
                 dialogueContinueButton.onClick.RemoveListener(AdvanceDialogue);
             }
 
-            if (directionChoiceButtons == null)
+            Button[] choiceButtons = directionChoiceButtons ?? Array.Empty<Button>();
+            for (int index = 0; index < choiceButtons.Length; index++)
             {
-                return;
+                if (choiceButtons[index] != null)
+                {
+                    choiceButtons[index].onClick.RemoveAllListeners();
+                }
             }
 
-            for (int index = 0; index < directionChoiceButtons.Length; index++)
+            Button[] quizButtons = chapter02QuizButtons ?? Array.Empty<Button>();
+            for (int index = 0; index < quizButtons.Length; index++)
             {
-                if (directionChoiceButtons[index] != null)
+                if (quizButtons[index] != null)
                 {
-                    directionChoiceButtons[index].onClick.RemoveAllListeners();
+                    quizButtons[index].onClick.RemoveAllListeners();
                 }
             }
         }
@@ -200,26 +226,46 @@ namespace ZhuozhengYuan
                 AdvanceDialogue();
             }
 
-            if (!_isDirectionChoiceOpen)
+            if (_isDirectionChoiceOpen)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    ChooseDirectionByIndex(0);
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    ChooseDirectionByIndex(1);
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha3))
+                {
+                    ChooseDirectionByIndex(2);
+                }
+                else if (Input.GetKeyDown(KeyCode.Escape))
+                {
+                    CloseDirectionChoice();
+                }
+            }
+
+            if (!_isChapter02QuizOpen)
             {
                 return;
             }
 
             if (Input.GetKeyDown(KeyCode.Alpha1))
             {
-                ChooseDirectionByIndex(0);
+                ChooseChapter02QuizOption(0);
             }
             else if (Input.GetKeyDown(KeyCode.Alpha2))
             {
-                ChooseDirectionByIndex(1);
+                ChooseChapter02QuizOption(1);
             }
             else if (Input.GetKeyDown(KeyCode.Alpha3))
             {
-                ChooseDirectionByIndex(2);
+                ChooseChapter02QuizOption(2);
             }
-            else if (Input.GetKeyDown(KeyCode.Escape))
+            else if (Input.GetKeyDown(KeyCode.Alpha4))
             {
-                CloseDirectionChoice();
+                ChooseChapter02QuizOption(3);
             }
         }
 
@@ -248,7 +294,7 @@ namespace ZhuozhengYuan
         {
             EnsureFallbackHierarchy();
             bool hasObjective = !string.IsNullOrWhiteSpace(objective);
-            SetActiveSafe(objectivePanel, hasObjective);
+            SetActiveSafe(objectivePanel, hasObjective && !_isChapter02QuizOpen);
             if (hasObjective && objectiveText != null)
             {
                 objectiveText.text = objective;
@@ -270,6 +316,34 @@ namespace ZhuozhengYuan
             }
 
             _toastCoroutine = StartCoroutine(HideAfterDelay(duration, HideToastImmediate));
+        }
+
+        public void ShowPageReward(string title, string message, float duration = 3.4f)
+        {
+            EnsureFallbackHierarchy();
+            SetActiveSafe(pageRewardPanel, true);
+
+            if (pageRewardAccent != null)
+            {
+                pageRewardAccent.color = GoldTextColor;
+            }
+
+            if (pageRewardTitleText != null)
+            {
+                pageRewardTitleText.text = title ?? string.Empty;
+            }
+
+            if (pageRewardBodyText != null)
+            {
+                pageRewardBodyText.text = message ?? string.Empty;
+            }
+
+            if (_pageRewardCoroutine != null)
+            {
+                StopCoroutine(_pageRewardCoroutine);
+            }
+
+            _pageRewardCoroutine = StartCoroutine(HideAfterDelay(duration, HidePageRewardImmediate));
         }
 
         public void ShowDirectionResult(string title, string message, Color accentColor, float duration = 2.6f)
@@ -406,6 +480,58 @@ namespace ZhuozhengYuan
             SetActiveSafe(gateCalibrationPanel, false);
         }
 
+        public void ShowChapter02Quiz(string title, string progressText, string questionText, string[] options, Action<int> onSelected)
+        {
+            EnsureFallbackHierarchy();
+            _chapter02QuizOptions = options ?? Array.Empty<string>();
+            _chapter02QuizSelectedCallback = onSelected;
+            _isChapter02QuizOpen = true;
+            SetActiveSafe(chapter02QuizPanel, true);
+            SetActiveSafe(objectivePanel, false);
+            gameManager?.SetChapter02QuizActive(true);
+
+            if (chapter02QuizTitleText != null)
+            {
+                chapter02QuizTitleText.text = title ?? string.Empty;
+            }
+
+            if (chapter02QuizProgressText != null)
+            {
+                chapter02QuizProgressText.text = progressText ?? string.Empty;
+            }
+
+            if (chapter02QuizQuestionText != null)
+            {
+                chapter02QuizQuestionText.text = questionText ?? string.Empty;
+            }
+
+            Button[] buttons = chapter02QuizButtons ?? Array.Empty<Button>();
+            TextMeshProUGUI[] optionTexts = chapter02QuizOptionTexts ?? Array.Empty<TextMeshProUGUI>();
+            for (int index = 0; index < buttons.Length; index++)
+            {
+                bool isVisible = index < _chapter02QuizOptions.Length;
+                if (buttons[index] != null)
+                {
+                    buttons[index].gameObject.SetActive(isVisible);
+                }
+
+                if (isVisible && index < optionTexts.Length && optionTexts[index] != null)
+                {
+                    optionTexts[index].text = (index + 1) + ". " + _chapter02QuizOptions[index];
+                }
+            }
+
+            if (chapter02QuizHintText != null)
+            {
+                chapter02QuizHintText.text = "\u6309 1/2/3/4 \u9009\u62e9\u7b54\u6848";
+            }
+        }
+
+        public void HideChapter02Quiz()
+        {
+            HideChapter02QuizImmediate();
+        }
+
         public void SetFadeAlpha(float alpha)
         {
             EnsureFallbackHierarchy();
@@ -487,6 +613,19 @@ namespace ZhuozhengYuan
             gameManager?.SetDirectionChoiceActive(false);
         }
 
+        private void ChooseChapter02QuizOption(int index)
+        {
+            if (!_isChapter02QuizOpen || index < 0 || index >= _chapter02QuizOptions.Length)
+            {
+                return;
+            }
+
+            Action<int> callback = _chapter02QuizSelectedCallback;
+            _chapter02QuizSelectedCallback = null;
+            HideChapter02QuizImmediate();
+            callback?.Invoke(index);
+        }
+
         private IEnumerator HideAfterDelay(float duration, Action hideAction)
         {
             yield return new WaitForSecondsRealtime(Mathf.Max(0.1f, duration));
@@ -503,6 +642,11 @@ namespace ZhuozhengYuan
             SetActiveSafe(resultPanel, false);
         }
 
+        private void HidePageRewardImmediate()
+        {
+            SetActiveSafe(pageRewardPanel, false);
+        }
+
         private void HideDialogueImmediate()
         {
             SetActiveSafe(dialoguePanel, false);
@@ -515,6 +659,16 @@ namespace ZhuozhengYuan
             SetActiveSafe(directionChoicePanel, false);
         }
 
+        private void HideChapter02QuizImmediate()
+        {
+            _isChapter02QuizOpen = false;
+            _chapter02QuizSelectedCallback = null;
+            _chapter02QuizOptions = Array.Empty<string>();
+            SetActiveSafe(chapter02QuizPanel, false);
+            SetActiveSafe(objectivePanel, objectiveText != null && !string.IsNullOrWhiteSpace(objectiveText.text));
+            gameManager?.SetChapter02QuizActive(false);
+        }
+
         private void WireButtons()
         {
             if (dialogueContinueButton != null)
@@ -523,21 +677,30 @@ namespace ZhuozhengYuan
                 dialogueContinueButton.onClick.AddListener(AdvanceDialogue);
             }
 
-            if (directionChoiceButtons == null)
+            Button[] choiceButtons = directionChoiceButtons ?? Array.Empty<Button>();
+            for (int index = 0; index < choiceButtons.Length; index++)
             {
-                return;
-            }
-
-            for (int index = 0; index < directionChoiceButtons.Length; index++)
-            {
-                if (directionChoiceButtons[index] == null)
+                if (choiceButtons[index] == null)
                 {
                     continue;
                 }
 
                 int capturedIndex = index;
-                directionChoiceButtons[index].onClick.RemoveAllListeners();
-                directionChoiceButtons[index].onClick.AddListener(() => ChooseDirectionByIndex(capturedIndex));
+                choiceButtons[index].onClick.RemoveAllListeners();
+                choiceButtons[index].onClick.AddListener(() => ChooseDirectionByIndex(capturedIndex));
+            }
+
+            Button[] quizButtons = chapter02QuizButtons ?? Array.Empty<Button>();
+            for (int index = 0; index < quizButtons.Length; index++)
+            {
+                if (quizButtons[index] == null)
+                {
+                    continue;
+                }
+
+                int capturedIndex = index;
+                quizButtons[index].onClick.RemoveAllListeners();
+                quizButtons[index].onClick.AddListener(() => ChooseChapter02QuizOption(capturedIndex));
             }
         }
 
@@ -549,6 +712,9 @@ namespace ZhuozhengYuan
                 && objectiveText != null
                 && interactionPromptPanel != null
                 && interactionPromptText != null
+                && pageRewardPanel != null
+                && pageRewardTitleText != null
+                && pageRewardBodyText != null
                 && dialoguePanel != null
                 && dialogueBodyText != null
                 && directionChoicePanel != null
@@ -556,6 +722,9 @@ namespace ZhuozhengYuan
                 && directionChoiceButtons.Length >= 3
                 && gateCalibrationPanel != null
                 && gateCalibrationTitleText != null
+                && chapter02QuizPanel != null
+                && chapter02QuizButtons != null
+                && chapter02QuizButtons.Length >= 4
                 && fadeCanvasGroup != null)
             {
                 return;
@@ -592,6 +761,12 @@ namespace ZhuozhengYuan
             resultTitleText = EnsureText("ResultTitleText", resultPanel.transform, "结果反馈", 34, FontStyles.Bold, new Vector2(24f, 80f), new Vector2(-24f, -22f), TextAlignmentOptions.TopLeft);
             resultBodyText = EnsureText("ResultBodyText", resultPanel.transform, "这里显示结果说明。", 26, FontStyles.Normal, new Vector2(24f, 20f), new Vector2(-24f, -68f), TextAlignmentOptions.TopLeft);
 
+            pageRewardPanel = EnsurePanel("PageRewardPanel", canvas.transform, new Vector2(760f, 184f), new Vector2(0f, -388f), new Color(0.07f, 0.1f, 0.08f, 0.96f), new Vector2(0.5f, 1f));
+            GameObject rewardAccent = EnsureImage("PageRewardAccent", pageRewardPanel.transform, GoldTextColor, Vector2.zero, Vector2.zero, new Vector2(0f, -8f), new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero);
+            pageRewardAccent = rewardAccent.GetComponent<Image>();
+            pageRewardTitleText = EnsureText("PageRewardTitleText", pageRewardPanel.transform, "\u83b7\u5f97\u6b8b\u9875", 38, FontStyles.Bold, new Vector2(34f, 92f), new Vector2(-34f, -20f), TextAlignmentOptions.TopLeft);
+            pageRewardBodyText = EnsureText("PageRewardBodyText", pageRewardPanel.transform, "\u5df2\u83b7\u5f97\u300a\u957f\u7269\u5fd7\u300b\u7b2c\u4e8c\u5f20\u6b8b\u9875", 28, FontStyles.Normal, new Vector2(34f, 24f), new Vector2(-34f, -88f), TextAlignmentOptions.TopLeft);
+
             dialoguePanel = EnsurePanel("DialoguePanel", canvas.transform, new Vector2(980f, 280f), new Vector2(0f, 46f), new Color(0.06f, 0.09f, 0.08f, 0.95f), new Vector2(0.5f, 0f));
             dialogueSpeakerText = EnsureText("DialogueSpeakerText", dialoguePanel.transform, "园中回响", 30, FontStyles.Bold, new Vector2(28f, 180f), new Vector2(-28f, -20f), TextAlignmentOptions.TopLeft);
             dialogueBodyText = EnsureText("DialogueBodyText", dialoguePanel.transform, "这里显示对话内容。", 28, FontStyles.Normal, new Vector2(28f, 76f), new Vector2(-28f, -68f), TextAlignmentOptions.TopLeft);
@@ -622,6 +797,20 @@ namespace ZhuozhengYuan
             gateCalibrationConfirmButton = EnsureButton("GateCalibrationConfirmButton", gateCalibrationPanel.transform, "尚未进入正确位置", new Vector2(260f, 60f), new Vector2(-28f, 24f), new Vector2(1f, 0f));
             gateCalibrationConfirmButton.interactable = false;
             gateCalibrationConfirmButtonText = gateCalibrationConfirmButton.GetComponentInChildren<TextMeshProUGUI>(true);
+
+            chapter02QuizPanel = EnsurePanel("Chapter02QuizPanel", canvas.transform, new Vector2(1180f, 620f), Vector2.zero, new Color(0.08f, 0.09f, 0.08f, 0.96f), new Vector2(0.5f, 0.5f));
+            chapter02QuizTitleText = EnsureText("Chapter02QuizTitleText", chapter02QuizPanel.transform, "\u7b2c\u4e8c\u7ae0\uff1a\u5c0f\u98de\u8679\u7b54\u9898", 50, FontStyles.Bold, new Vector2(54f, 470f), new Vector2(-54f, -38f), TextAlignmentOptions.TopLeft);
+            chapter02QuizProgressText = EnsureText("Chapter02QuizProgressText", chapter02QuizPanel.transform, "\u7b54\u9898\u8fdb\u5ea6 1/4", 30, FontStyles.Normal, new Vector2(54f, 422f), new Vector2(-54f, -118f), TextAlignmentOptions.TopLeft);
+            chapter02QuizQuestionText = EnsureText("Chapter02QuizQuestionText", chapter02QuizPanel.transform, "\u8bf7\u9009\u62e9\u6b63\u786e\u7b54\u6848\u3002", 36, FontStyles.Normal, new Vector2(54f, 312f), new Vector2(-54f, -174f), TextAlignmentOptions.TopLeft);
+            chapter02QuizButtons = new Button[4];
+            chapter02QuizOptionTexts = new TextMeshProUGUI[4];
+            for (int index = 0; index < chapter02QuizButtons.Length; index++)
+            {
+                Button button = EnsureButton("Chapter02QuizButton" + index, chapter02QuizPanel.transform, "\u9009\u9879 " + (index + 1), new Vector2(0f, 72f), Vector2.zero, new Vector2(0f, 1f), new Vector2(1f, 1f));
+                chapter02QuizButtons[index] = button;
+                chapter02QuizOptionTexts[index] = button.GetComponentInChildren<TextMeshProUGUI>(true);
+            }
+            chapter02QuizHintText = EnsureText("Chapter02QuizHintText", chapter02QuizPanel.transform, "\u6309 1/2/3/4 \u9009\u62e9\u7b54\u6848", 26, FontStyles.Normal, new Vector2(54f, 28f), new Vector2(-54f, -546f), TextAlignmentOptions.BottomLeft);
 
             GameObject fadeObject = EnsureImage("FadeOverlay", canvas.transform, new Color(0f, 0f, 0f, 1f), Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.one, Vector2.zero);
             fadeCanvasGroup = fadeObject.GetComponent<CanvasGroup>();
@@ -783,6 +972,8 @@ namespace ZhuozhengYuan
             ApplyFont(toastText, false);
             ApplyFont(resultTitleText, true);
             ApplyFont(resultBodyText, false);
+            ApplyFont(pageRewardTitleText, true);
+            ApplyFont(pageRewardBodyText, false);
             ApplyFont(dialogueSpeakerText, true);
             ApplyFont(dialogueBodyText, false);
             ApplyFont(dialogueHintText, false);
@@ -794,15 +985,25 @@ namespace ZhuozhengYuan
             ApplyFont(gateCalibrationHintText, true);
             ApplyFont(gateCalibrationControlsText, false);
             ApplyFont(gateCalibrationConfirmButtonText, true);
+            ApplyFont(chapter02QuizTitleText, true);
+            ApplyFont(chapter02QuizProgressText, false);
+            ApplyFont(chapter02QuizQuestionText, false);
+            ApplyFont(chapter02QuizHintText, false);
 
             if (directionChoiceButtonTexts == null)
             {
-                return;
+                directionChoiceButtonTexts = Array.Empty<TextMeshProUGUI>();
             }
 
             for (int index = 0; index < directionChoiceButtonTexts.Length; index++)
             {
                 ApplyFont(directionChoiceButtonTexts[index], true);
+            }
+
+            TextMeshProUGUI[] quizTexts = chapter02QuizOptionTexts ?? Array.Empty<TextMeshProUGUI>();
+            for (int index = 0; index < quizTexts.Length; index++)
+            {
+                ApplyFont(quizTexts[index], true);
             }
         }
 
@@ -813,9 +1014,11 @@ namespace ZhuozhengYuan
             ApplyPanelChrome(interactionPromptPanel, PanelInkColor);
             ApplyPanelChrome(toastPanel, PanelInkColor);
             ApplyPanelChrome(resultPanel, PanelInkColor);
+            ApplyPanelChrome(pageRewardPanel, PanelInkColor);
             ApplyPanelChrome(dialoguePanel, PanelInkColor);
             ApplyPanelChrome(directionChoicePanel, PanelInkColor);
             ApplyPanelChrome(gateCalibrationPanel, PanelInkColor);
+            ApplyPanelChrome(chapter02QuizPanel, PanelInkColor);
 
             SetRect(pageCounterPanel, new Vector2(0f, 1f), new Vector2(340f, 104f), new Vector2(28f, -24f));
             SetTextBox(pageCounterText, new Vector2(28f, 10f), new Vector2(-28f, -10f), 48f, TextAlignmentOptions.MidlineLeft);
@@ -833,6 +1036,10 @@ namespace ZhuozhengYuan
             SetRect(resultPanel, new Vector2(0.5f, 1f), new Vector2(980f, 210f), new Vector2(0f, -184f));
             SetTextBox(resultTitleText, new Vector2(40f, 112f), new Vector2(-40f, -28f), 46f, TextAlignmentOptions.TopLeft);
             SetTextBox(resultBodyText, new Vector2(40f, 30f), new Vector2(-40f, -92f), 34f, TextAlignmentOptions.TopLeft);
+
+            SetRect(pageRewardPanel, new Vector2(0.5f, 1f), new Vector2(860f, 194f), new Vector2(0f, -404f));
+            SetTextBox(pageRewardTitleText, new Vector2(40f, 104f), new Vector2(-40f, -26f), 44f, TextAlignmentOptions.TopLeft);
+            SetTextBox(pageRewardBodyText, new Vector2(40f, 30f), new Vector2(-40f, -96f), 32f, TextAlignmentOptions.TopLeft);
 
             SetRect(dialoguePanel, new Vector2(0.5f, 0f), new Vector2(1360f, 344f), new Vector2(0f, 48f));
             SetTextBox(dialogueSpeakerText, new Vector2(48f, 228f), new Vector2(-48f, -34f), 44f, TextAlignmentOptions.TopLeft);
@@ -853,6 +1060,13 @@ namespace ZhuozhengYuan
             SetTextBox(gateCalibrationControlsText, new Vector2(58f, 48f), new Vector2(-58f, -308f), 30f, TextAlignmentOptions.TopLeft);
             SetRect(gateCalibrationConfirmButton != null ? gateCalibrationConfirmButton.gameObject : null, new Vector2(1f, 0f), new Vector2(390f, 82f), new Vector2(-50f, 42f));
             SetTextBox(gateCalibrationConfirmButtonText, new Vector2(18f, 10f), new Vector2(-18f, -10f), 34f, TextAlignmentOptions.Center);
+
+            SetRect(chapter02QuizPanel, new Vector2(0.5f, 0.5f), new Vector2(1180f, 620f), new Vector2(120f, -24f));
+            SetTextBox(chapter02QuizTitleText, new Vector2(58f, 476f), new Vector2(-58f, -40f), 48f, TextAlignmentOptions.TopLeft);
+            SetTextBox(chapter02QuizProgressText, new Vector2(58f, 426f), new Vector2(-58f, -126f), 30f, TextAlignmentOptions.TopLeft);
+            SetTextBox(chapter02QuizQuestionText, new Vector2(58f, 318f), new Vector2(-58f, -182f), 34f, TextAlignmentOptions.TopLeft);
+            SetTextBox(chapter02QuizHintText, new Vector2(58f, 18f), new Vector2(-58f, -574f), 24f, TextAlignmentOptions.BottomLeft);
+            LayoutChapter02QuizButtons();
         }
 
         private void LayoutChoiceButtons()
@@ -885,6 +1099,40 @@ namespace ZhuozhengYuan
                 if (directionChoiceButtonTexts != null && index < directionChoiceButtonTexts.Length)
                 {
                     SetTextBox(directionChoiceButtonTexts[index], new Vector2(32f, 12f), new Vector2(-32f, -12f), 34f, TextAlignmentOptions.MidlineLeft);
+                }
+            }
+        }
+
+        private void LayoutChapter02QuizButtons()
+        {
+            if (chapter02QuizButtons == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < chapter02QuizButtons.Length; index++)
+            {
+                Button button = chapter02QuizButtons[index];
+                if (button == null)
+                {
+                    continue;
+                }
+
+                RectTransform rectTransform = button.GetComponent<RectTransform>();
+                if (rectTransform == null)
+                {
+                    continue;
+                }
+
+                rectTransform.anchorMin = new Vector2(0f, 1f);
+                rectTransform.anchorMax = new Vector2(1f, 1f);
+                rectTransform.pivot = new Vector2(0.5f, 1f);
+                rectTransform.offsetMin = new Vector2(70f, -352f - (index * 70f));
+                rectTransform.offsetMax = new Vector2(-70f, -290f - (index * 70f));
+
+                if (chapter02QuizOptionTexts != null && index < chapter02QuizOptionTexts.Length)
+                {
+                    SetTextBox(chapter02QuizOptionTexts[index], new Vector2(34f, 8f), new Vector2(-34f, -8f), 32f, TextAlignmentOptions.MidlineLeft);
                 }
             }
         }

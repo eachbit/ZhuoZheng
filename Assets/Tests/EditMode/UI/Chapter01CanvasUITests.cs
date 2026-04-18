@@ -115,6 +115,77 @@ namespace ZhuozhengYuan.Tests.EditMode
             UnityEngine.Object.DestroyImmediate(ui.gameObject);
         }
 
+        [Test]
+        public void CreateDefault_ShouldBuildReadableChapter02QuizLayout()
+        {
+            Type uiType = Type.GetType("ZhuozhengYuan.Chapter01CanvasUI, Assembly-CSharp");
+            Assert.IsNotNull(uiType, "Chapter01CanvasUI 尚未创建。");
+
+            MonoBehaviour ui = (MonoBehaviour)InvokeStatic(uiType, "CreateDefault");
+
+            Assert.IsInstanceOf(Type.GetType("ZhuozhengYuan.IChapter02QuizPresenter, Assembly-CSharp"), ui);
+            AssertPanelSizeAtLeast(ui, "chapter02QuizPanel", 1160f, 600f);
+            AssertFontSizeAtLeast(ui, "chapter02QuizTitleText", 48f);
+            AssertFontSizeAtLeast(ui, "chapter02QuizQuestionText", 34f);
+
+            Array optionTexts = GetField(ui, "chapter02QuizOptionTexts") as Array;
+            Assert.IsNotNull(optionTexts, "chapter02QuizOptionTexts 不存在。");
+            Assert.GreaterOrEqual(optionTexts.Length, 4, "第二章需要 4 个答案按钮。");
+            TextMeshProUGUI firstOptionText = optionTexts.GetValue(0) as TextMeshProUGUI;
+            Assert.IsNotNull(firstOptionText, "第一个答案文字不存在。");
+            Assert.GreaterOrEqual(firstOptionText.fontSize, 32f, "第二章答案按钮字体不能小于 32。");
+
+            UnityEngine.Object.DestroyImmediate(ui.gameObject);
+        }
+
+        [Test]
+        public void ShowChapter02Quiz_ShouldPopulateFormalQuizPanel()
+        {
+            Type uiType = Type.GetType("ZhuozhengYuan.Chapter01CanvasUI, Assembly-CSharp");
+            Assert.IsNotNull(uiType, "Chapter01CanvasUI 尚未创建。");
+
+            MonoBehaviour ui = (MonoBehaviour)InvokeStatic(uiType, "CreateDefault");
+            string[] options = { "A", "B", "C", "D" };
+
+            Invoke(ui, "ShowChapter02Quiz", "第二章", "答题进度 1/4", "小飞虹连接哪两段水廊？", options, null);
+
+            GameObject panel = GetField(ui, "chapter02QuizPanel") as GameObject;
+            TextMeshProUGUI titleText = GetField(ui, "chapter02QuizTitleText") as TextMeshProUGUI;
+            TextMeshProUGUI progressText = GetField(ui, "chapter02QuizProgressText") as TextMeshProUGUI;
+            TextMeshProUGUI questionText = GetField(ui, "chapter02QuizQuestionText") as TextMeshProUGUI;
+            Array optionTexts = GetField(ui, "chapter02QuizOptionTexts") as Array;
+            TextMeshProUGUI firstOptionText = optionTexts.GetValue(0) as TextMeshProUGUI;
+
+            Assert.IsTrue(panel.activeSelf);
+            Assert.AreEqual("第二章", titleText.text);
+            Assert.AreEqual("答题进度 1/4", progressText.text);
+            StringAssert.Contains("小飞虹", questionText.text);
+            StringAssert.Contains("1. A", firstOptionText.text);
+
+            UnityEngine.Object.DestroyImmediate(ui.gameObject);
+        }
+
+        [Test]
+        public void ShowPageReward_ShouldDisplaySecondPageRewardPanel()
+        {
+            Type uiType = Type.GetType("ZhuozhengYuan.Chapter01CanvasUI, Assembly-CSharp");
+            Assert.IsNotNull(uiType, "Chapter01CanvasUI was not found.");
+
+            MonoBehaviour ui = (MonoBehaviour)InvokeStatic(uiType, "CreateDefault");
+
+            Invoke(ui, "ShowPageReward", "获得残页", "已获得《长物志》第二张残页", 3.4f);
+
+            GameObject panel = GetField(ui, "pageRewardPanel") as GameObject;
+            TextMeshProUGUI titleText = GetField(ui, "pageRewardTitleText") as TextMeshProUGUI;
+            TextMeshProUGUI bodyText = GetField(ui, "pageRewardBodyText") as TextMeshProUGUI;
+
+            Assert.IsTrue(panel.activeSelf);
+            Assert.AreEqual("获得残页", titleText.text);
+            StringAssert.Contains("第二张残页", bodyText.text);
+
+            UnityEngine.Object.DestroyImmediate(ui.gameObject);
+        }
+
         private static void SetField(object target, string fieldName, object value)
         {
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);

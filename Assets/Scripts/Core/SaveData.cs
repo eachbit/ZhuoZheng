@@ -16,6 +16,8 @@ namespace ZhuozhengYuan
         public Chapter02State chapter02State = Chapter02State.NotStarted;
         public int chapter02AnsweredCorrectCount;
         public string[] chapter02QuestionOrder = Array.Empty<string>();
+        public bool chapter02PageCollected;
+        public bool chapter04PageCollected;
 
         public static SaveData CreateDefault()
         {
@@ -31,7 +33,9 @@ namespace ZhuozhengYuan
                 chapter01PageCollected = false,
                 chapter02State = Chapter02State.NotStarted,
                 chapter02AnsweredCorrectCount = 0,
-                chapter02QuestionOrder = Array.Empty<string>()
+                chapter02QuestionOrder = Array.Empty<string>(),
+                chapter02PageCollected = false,
+                chapter04PageCollected = false
             };
         }
     }
