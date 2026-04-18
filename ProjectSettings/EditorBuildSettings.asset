@@ -6,6 +6,12 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/StartScene.unity
+    guid: cb130701ab8340c4a99cffbc8bb1e383
+  - enabled: 1
+    path: Assets/Scenes/Jianjie.unity
+    guid: 559da532647f48842aa91b83c4d76e70
+  - enabled: 1
     path: Assets/Scenes/Garden_Main.unity
-    guid: 00000000000000000000000000000000
+    guid: 6857c531c695f544eae7c2d0e5fe607c
   m_configObjects: {}
