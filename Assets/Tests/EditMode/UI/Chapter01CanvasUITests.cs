@@ -256,6 +256,38 @@ namespace ZhuozhengYuan.Tests.EditMode
             UnityEngine.Object.DestroyImmediate(ui.gameObject);
         }
 
+        [Test]
+        public void ShowFinaleHistory_ShouldKeepScrollingTextSeparatedAndRevealGameOverAtEnd()
+        {
+            Type uiType = Type.GetType("ZhuozhengYuan.Chapter01CanvasUI, Assembly-CSharp");
+            Assert.IsNotNull(uiType, "Chapter01CanvasUI was not found.");
+
+            MonoBehaviour ui = (MonoBehaviour)InvokeStatic(uiType, "CreateDefault");
+
+            Invoke(ui, "ShowFinaleHistory", "\u62d9\u653f\u56ed", "\u660e\u6b63\u5fb7\u56db\u5e74\uff0c\u738b\u732e\u81e3\u9000\u9690\u8425\u56ed\u3002\n\n\u4e00\u6c60\u4e09\u5c9b\uff0c\u4ead\u69ad\u5eca\u6865\u76f8\u4e92\u6210\u666f\u3002");
+
+            TextMeshProUGUI titleText = GetField(ui, "finaleHistoryTitleText") as TextMeshProUGUI;
+            TextMeshProUGUI bodyText = GetField(ui, "finaleHistoryBodyText") as TextMeshProUGUI;
+            TextMeshProUGUI hintText = GetField(ui, "finaleHistoryHintText") as TextMeshProUGUI;
+            Assert.IsNotNull(titleText);
+            Assert.IsNotNull(bodyText);
+            Assert.IsNotNull(hintText);
+
+            RectTransform titleRect = titleText.GetComponent<RectTransform>();
+            RectTransform bodyRect = bodyText.GetComponent<RectTransform>();
+            Assert.IsNotNull(titleRect);
+            Assert.IsNotNull(bodyRect);
+            Assert.Greater(Mathf.Abs(titleRect.anchoredPosition.y - bodyRect.anchoredPosition.y), 120f, "\u6807\u9898\u548c\u6b63\u6587\u4e0d\u80fd\u5728\u6eda\u52a8\u65f6\u91cd\u5408\u3002");
+            Assert.AreEqual(string.Empty, hintText.text);
+
+            SetField(ui, "_finaleHistoryShownAtRealtime", Time.unscaledTime - 120f);
+            Invoke(ui, "UpdateFinaleHistoryScroll");
+
+            Assert.AreEqual("\u6e38\u73a9\u7ed3\u675f", hintText.text);
+
+            UnityEngine.Object.DestroyImmediate(ui.gameObject);
+        }
+
         private static void SetField(object target, string fieldName, object value)
         {
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);

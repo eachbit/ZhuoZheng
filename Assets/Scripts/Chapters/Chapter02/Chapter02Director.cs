@@ -388,74 +388,74 @@ namespace ZhuozhengYuan
                 new Chapter02Question
                 {
                     questionId = "xiaofeihong-01",
-                    questionText = "\u62d9\u653f\u56ed\u91cc\u8fd9\u5ea7\u8457\u540d\u7684\u5eca\u6865\uff0c\u5e38\u89c1\u7684\u6b63\u5f0f\u540d\u79f0\u662f\u4ec0\u4e48\uff1f",
-                    options = new[] { "\u5c0f\u98de\u8679", "\u5c0f\u98de\u4ead", "\u5c0f\u98de\u9601", "\u5c0f\u98de\u5eca" },
+                    questionText = "小飞虹在拙政园中部水院中，最典型的建筑类型是什么？",
+                    options = new[] { "跨水而设的廊桥", "临水伸出的水榭", "叠石山上的方亭", "分隔庭院的漏窗墙" },
                     correctOptionIndex = 0,
-                    correctFeedback = "\u56de\u7b54\u6b63\u786e\u3002\u62d9\u653f\u56ed\u4e2d\u8fd9\u5ea7\u8457\u540d\u5eca\u6865\u5e38\u79f0\u201c\u5c0f\u98de\u8679\u201d\u3002",
-                    wrongFeedback = "\u518d\u60f3\u60f3\uff0c\u540d\u5b57\u91cc\u70b9\u51fa\u4e86\u5b83\u5982\u8679\u51cc\u6ce2\u7684\u610f\u8c61\u3002"
+                    correctFeedback = "回答正确。小飞虹是拙政园中部水面上的廊桥，兼具通行、遮蔽和临水观景功能。",
+                    wrongFeedback = "再想想，它不是单独的亭榭，而是把“桥”和“廊”结合在水面上的建筑。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xiaofeihong-02",
-                    questionText = "\u5c0f\u98de\u8679\u5728\u56ed\u6797\u5efa\u7b51\u7c7b\u578b\u4e0a\uff0c\u6700\u51c6\u786e\u7684\u8bf4\u6cd5\u662f\u54ea\u4e00\u9879\uff1f",
-                    options = new[] { "\u724c\u574a", "\u5eca\u6865", "\u620f\u53f0", "\u6c34\u69ad" },
-                    correctOptionIndex = 1,
-                    correctFeedback = "\u56de\u7b54\u6b63\u786e\u3002\u5c0f\u98de\u8679\u5c5e\u4e8e\u8de8\u6c34\u800c\u5efa\u7684\u5eca\u6865\u3002",
-                    wrongFeedback = "\u63d0\u793a\uff1a\u5b83\u65e2\u80fd\u901a\u884c\uff0c\u4e5f\u80fd\u906e\u853d\u3001\u89c2\u666f\u3002"
+                    questionText = "“小飞虹”之名与当前水面场景最直接的审美联系是什么？",
+                    options = new[] { "桥影入水，形成倒影如虹的画面", "桥面铺色鲜艳，所以像彩虹", "屋顶高度很高，形似拱门", "栏杆数量多，形成重复纹样" },
+                    correctOptionIndex = 0,
+                    correctFeedback = "回答正确。小飞虹的美感来自桥身、廊影与水面倒影相合，形成倒影如虹的诗意。",
+                    wrongFeedback = "提示：题名里的“虹”更多来自桥与水中倒影的关系，而不是单纯颜色。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xiaofeihong-03",
-                    questionText = "\u5c0f\u98de\u8679\u4e3b\u8981\u4f4d\u4e8e\u62d9\u653f\u56ed\u7684\u54ea\u4e2a\u90e8\u5206\uff1f",
-                    options = new[] { "\u4e1c\u56ed", "\u4e2d\u56ed", "\u897f\u56ed", "\u51fa\u53e3\u5916\u8857\u5df7" },
-                    correctOptionIndex = 1,
-                    correctFeedback = "\u56de\u7b54\u6b63\u786e\u3002\u5c0f\u98de\u8679\u4f4d\u4e8e\u62d9\u653f\u56ed\u7684\u4e2d\u56ed\u533a\u57df\u3002",
-                    wrongFeedback = "\u60f3\u60f3\u62d9\u653f\u56ed\u6700\u7cbe\u534e\u3001\u4ee5\u6c34\u9762\u4e3a\u4e2d\u5fc3\u5c55\u5f00\u7684\u90a3\u4e00\u90e8\u5206\u3002"
+                    questionText = "小飞虹为什么能体现江南水乡园林的建筑特色？",
+                    options = new[] { "桥、廊、水面和倒影共同构成可行可看的空间", "主要依靠高墙形成封闭防御感", "以大体量殿堂突出礼仪等级", "把水面作为不可接近的背景" },
+                    correctOptionIndex = 0,
+                    correctFeedback = "回答正确。它把江南水乡的水、桥、廊、影结合起来，让通行和赏景同时发生。",
+                    wrongFeedback = "提示：江南水乡园林的重点常在水面与建筑之间的互相成景。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xiaofeihong-04",
-                    questionText = "\u636e\u56ed\u6797\u5bfc\u89c8\u4ecb\u7ecd\uff0c\u6e38\u5ba2\u201c\u8fc7\u5c0f\u98de\u8679\u201d\u4e4b\u540e\uff0c\u53ef\u4ee5\u524d\u5f80\u54ea\u4e00\u5904\u666f\u70b9\uff1f",
-                    options = new[] { "\u8fdc\u9999\u5802", "\u9999\u6d32", "\u5170\u96ea\u5802", "\u89c1\u5c71\u697c" },
-                    correctOptionIndex = 1,
-                    correctFeedback = "\u56de\u7b54\u6b63\u786e\u3002\u8fc7\u5c0f\u98de\u8679\u540e\uff0c\u53ef\u524d\u5f80\u9999\u6d32\u4e00\u5e26\u89c2\u666f\u3002",
-                    wrongFeedback = "\u63d0\u793a\uff1a\u5b83\u8fde\u63a5\u7740\u90a3\u8258\u50cf\u753b\u822b\u4e00\u6837\u505c\u6cca\u5728\u6c34\u8fb9\u7684\u5efa\u7b51\u3002"
+                    questionText = "从游线安排看，小飞虹在拙政园中部空间里的作用更接近哪一种？",
+                    options = new[] { "连接水岸并引导游人边走边转换视角", "把中部水面完全切断，形成封闭院落", "强化正殿前的礼仪轴线", "只作为远处背景，不参与行走路径" },
+                    correctOptionIndex = 0,
+                    correctFeedback = "回答正确。小飞虹既组织游线，也让玩家在经过时不断获得新的水面与建筑视角。",
+                    wrongFeedback = "提示：它不是只摆在那里被观看，也参与了玩家如何穿行这个场景。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xiaofeihong-05",
-                    questionText = "\u201c\u5c0f\u98de\u8679\u201d\u8fd9\u4e2a\u540d\u5b57\uff0c\u6700\u5bb9\u6613\u8ba9\u4eba\u8054\u60f3\u5230\u54ea\u79cd\u666f\u8c61\uff1f",
-                    options = new[] { "\u6865\u5f71\u5165\u6c34\uff0c\u5982\u8679\u8f7b\u98de", "\u6865\u4e0a\u6652\u8c37\uff0c\u91d1\u9ec4\u904d\u5730", "\u6865\u4e0b\u5de8\u6d6a\u7ffb\u6eda", "\u6865\u9876\u79ef\u96ea\u6210\u5c71" },
+                    questionText = "小飞虹的“廊桥”结构，比普通石桥多出了哪一层建筑体验？",
+                    options = new[] { "人在桥上可被廊屋包裹，同时透过开敞处看水景", "桥面更高，可以直接俯瞰城墙", "桥身封闭，不再与外部景色交流", "主要用于陈列家具和书画" },
                     correctOptionIndex = 0,
-                    correctFeedback = "\u56de\u7b54\u6b63\u786e\u3002\u5c0f\u98de\u8679\u7684\u540d\u5b57\u6b63\u5e26\u6709\u6865\u5f71\u5982\u8679\u7684\u8bd7\u610f\u8054\u60f3\u3002",
-                    wrongFeedback = "\u60f3\u60f3\u5b83\u6a2a\u8de8\u6c34\u9762\u65f6\uff0c\u4e0e\u5012\u5f71\u4e00\u8d77\u5f62\u6210\u7684\u753b\u9762\u3002"
+                    correctFeedback = "回答正确。廊桥让人既在桥上通过，又在廊下停留、避雨、观水，空间体验更丰富。",
+                    wrongFeedback = "提示：普通桥重在跨越，廊桥还增加了停留和观看的层次。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xiaofeihong-06",
-                    questionText = "\u4ece\u6e38\u56ed\u4f53\u9a8c\u6765\u770b\uff0c\u5c0f\u98de\u8679\u6700\u80fd\u4f53\u73b0\u4e0b\u9762\u54ea\u79cd\u9020\u56ed\u7279\u70b9\uff1f",
-                    options = new[] { "\u79fb\u6b65\u6362\u666f", "\u6574\u9f50\u5bf9\u79f0\u5230\u5904\u76f8\u540c", "\u53ea\u91cd\u56f4\u5899\u4e0d\u91cd\u6c34\u9762", "\u5b8c\u5168\u5c01\u95ed\u4e0d\u8ba9\u89c2\u666f" },
+                    questionText = "小飞虹放在拙政园这样的历史园林中，最能说明哪种造园观念？",
+                    options = new[] { "小尺度建筑也能承载诗意、游线和水景组织", "园林价值主要来自建筑越高越宏大", "桥梁只解决交通，不参与文化表达", "水面应尽量与建筑分离" },
                     correctOptionIndex = 0,
-                    correctFeedback = "\u56de\u7b54\u6b63\u786e\u3002\u8d70\u4e0a\u5c0f\u98de\u8679\uff0c\u666f\u8272\u4f1a\u968f\u7740\u6b65\u4f10\u4e0d\u65ad\u53d8\u5316\u3002",
-                    wrongFeedback = "\u63d0\u793a\uff1a\u4eba\u5728\u6865\u4e0a\u884c\u8d70\u65f6\uff0c\u773c\u524d\u666f\u8272\u4f1a\u4e00\u5c42\u5c42\u5c55\u5f00\u3002"
+                    correctFeedback = "回答正确。历史园林的底蕴常在小尺度处显现，小飞虹就是以桥廊组织诗意空间的例子。",
+                    wrongFeedback = "提示：江南园林并不靠宏大取胜，而靠小中见大、步移景换。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xiaofeihong-07",
-                    questionText = "\u5c0f\u98de\u8679\u8de8\u8d8a\u7684\u4e3b\u8981\u7a7a\u95f4\u662f\u4ec0\u4e48\uff1f",
-                    options = new[] { "\u5c71\u5761", "\u6c60\u6c34", "\u8857\u5df7", "\u82b1\u5703" },
-                    correctOptionIndex = 1,
-                    correctFeedback = "\u56de\u7b54\u6b63\u786e\u3002\u5c0f\u98de\u8679\u662f\u8de8\u8d8a\u6c60\u6c34\u800c\u5efa\u7684\u5eca\u6865\u3002",
-                    wrongFeedback = "\u518d\u89c2\u5bdf\u4e00\u4e0b\u5b83\u6240\u5728\u7684\u4f4d\u7f6e\uff0c\u91cd\u70b9\u5728\u6c34\u9762\u4e4b\u4e0a\u3002"
+                    questionText = "站在小飞虹附近看水面时，桥、水、影共同形成了哪种文化意味？",
+                    options = new[] { "把实在建筑转化成带有诗画感的水上意象", "突出桥梁工程的防洪功能", "强调建筑材料的厚重坚固", "让水面成为完全空白的分隔带" },
+                    correctOptionIndex = 0,
+                    correctFeedback = "回答正确。小飞虹借水成景，桥影入水后让真实建筑带上诗画气质。",
+                    wrongFeedback = "提示：这里的水不是背景板，而是让桥产生文化意象的重要部分。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xiaofeihong-08",
-                    questionText = "\u5728\u62d9\u653f\u56ed\u4e2d\uff0c\u5c0f\u98de\u8679\u9664\u4e86\u4f9b\u4eba\u901a\u884c\uff0c\u8fd8\u627f\u62c5\u4ec0\u4e48\u4f5c\u7528\uff1f",
-                    options = new[] { "\u7ec4\u7ec7\u6e38\u7ebf\u5e76\u5f15\u5bfc\u89c2\u666f", "\u5b58\u653e\u5668\u7269", "\u9972\u517b\u9c7c\u9e1f", "\u906e\u6321\u5168\u90e8\u666f\u8272" },
+                    questionText = "如果把小飞虹作为第二章场景的文化考点，最核心的不应只是记住名字，而是什么？",
+                    options = new[] { "理解它如何以廊桥、水面、倒影和游线构成园林体验", "知道它旁边所有植物的数量", "判断桥面是否足够宽阔", "比较它和现代公路桥的承重能力" },
                     correctOptionIndex = 0,
-                    correctFeedback = "\u56de\u7b54\u6b63\u786e\u3002\u5b83\u628a\u901a\u884c\u4e0e\u89c2\u666f\u7ed3\u5408\u5728\u4e86\u4e00\u8d77\u3002",
-                    wrongFeedback = "\u63d0\u793a\uff1a\u82cf\u5dde\u56ed\u6797\u91cc\u7684\u6865\u5eca\u5e38\u5e38\u517c\u5177\u201c\u8d70\u201d\u548c\u201c\u770b\u201d\u4e24\u79cd\u529f\u80fd\u3002"
+                    correctFeedback = "回答正确。这个场景的重点，是小飞虹如何把建筑特色、江南水乡气质和游线体验结合起来。",
+                    wrongFeedback = "提示：这道题考的是场景的文化和建筑特色，不是单纯背景点名称。"
                 }
             };
         }

@@ -132,6 +132,24 @@ namespace ZhuozhengYuan.Tests.EditMode
             StringAssert.Contains("世界文化遗产", body);
         }
 
+        [Test]
+        public void DefaultQuestionBank_ShouldFocusOnXuexiangYunweiArchitecturalCulture()
+        {
+            Type directorType = Type.GetType("ZhuozhengYuan.Chapter06Director, Assembly-CSharp");
+            Assert.IsNotNull(directorType, "Chapter06Director was not found.");
+
+            Array questionBank = InvokeCreateDefaultQuestionBank(directorType);
+
+            Assert.GreaterOrEqual(questionBank.Length, 8);
+            AssertQuestionBankContains(questionBank, "\u96ea\u9999\u4e91\u851a\u4ead");
+            AssertQuestionBankContains(questionBank, "\u4e00\u6c60\u4e09\u5c9b");
+            AssertQuestionBankContains(questionBank, "\u4e2d\u5c9b");
+            AssertQuestionBankContains(questionBank, "\u6885\u82b1");
+            AssertQuestionBankContains(questionBank, "\u8fdc\u9999\u5802");
+            AssertQuestionBankContains(questionBank, "\u77e9\u5f62\u65b9\u4ead");
+            AssertQuestionBankContains(questionBank, "\u5386\u53f2\u5e95\u8574");
+        }
+
         private static bool InvokeShouldShowFinaleObjective(Type directorType, object saveData)
         {
             MethodInfo method = directorType.GetMethod("ShouldShowFinaleObjective", BindingFlags.Static | BindingFlags.NonPublic);
@@ -151,6 +169,53 @@ namespace ZhuozhengYuan.Tests.EditMode
             MethodInfo method = directorType.GetMethod("CreateFinaleDialogueLines", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.IsNotNull(method, "CreateFinaleDialogueLines was not found.");
             return method.Invoke(null, null) as Array;
+        }
+
+        private static Array InvokeCreateDefaultQuestionBank(Type directorType)
+        {
+            MethodInfo method = directorType.GetMethod("CreateDefaultQuestionBank", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.IsNotNull(method, "CreateDefaultQuestionBank was not found.");
+            return method.Invoke(null, null) as Array;
+        }
+
+        private static void AssertQuestionBankContains(Array questionBank, string expectedText)
+        {
+            foreach (object question in questionBank)
+            {
+                if (Contains(GetField(question, "questionText"), expectedText)
+                    || Contains(GetField(question, "correctFeedback"), expectedText)
+                    || Contains(GetField(question, "wrongFeedback"), expectedText)
+                    || OptionsContain(GetField(question, "options") as string[], expectedText))
+                {
+                    return;
+                }
+            }
+
+            Assert.Fail("Question bank should contain architectural culture text: " + expectedText);
+        }
+
+        private static bool OptionsContain(string[] options, string expectedText)
+        {
+            if (options == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < options.Length; index++)
+            {
+                if (Contains(options[index], expectedText))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool Contains(object value, string expectedText)
+        {
+            string text = value as string;
+            return !string.IsNullOrEmpty(text) && text.Contains(expectedText);
         }
 
         private static AudioClip InvokeCreateFinaleMusicClip(Type directorType, int sampleRate, float durationSeconds)

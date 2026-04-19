@@ -23,6 +23,7 @@ namespace ZhuozhengYuan
         private float _finaleHistoryShownAtTime;
         private float _finaleHistoryScrollSpeed = 42f;
         private float _finaleHistoryStartOffsetY = 220f;
+        private string _finaleHistoryEndText = "游玩结束";
         private Color _directionResultAccent = new Color(0.85f, 0.9f, 1f, 1f);
         private Color _directionFlashColor = new Color(0.85f, 0.9f, 1f, 0f);
         private float _directionFlashStartTime = -10f;
@@ -503,7 +504,10 @@ namespace ZhuozhengYuan
 
             GUI.Label(titleRect, _finaleHistoryTitle, _titleStyle);
             GUI.Label(bodyRect, _finaleHistoryBody, _bodyStyle);
-            GUI.Label(hintRect, "游历至此落幕", _smallStyle);
+            if (bodyRect.yMax < 0f)
+            {
+                GUI.Label(hintRect, _finaleHistoryEndText, _smallStyle);
+            }
         }
 
         private void AdvanceDialogue()

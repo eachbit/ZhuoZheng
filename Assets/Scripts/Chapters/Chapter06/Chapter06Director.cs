@@ -651,74 +651,74 @@ namespace ZhuozhengYuan
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-01",
-                    questionText = "雪香云蔚亭主要位于拙政园的哪一部分？",
-                    options = new[] { "东花园", "中部花园", "西花园", "住宅区" },
-                    correctOptionIndex = 1,
-                    correctFeedback = "回答正确。雪香云蔚亭位于拙政园中部花园，是中部赏景的重要节点。",
-                    wrongFeedback = "再想想，雪香云蔚亭处在拙政园最精华、以水面和山岛组织空间的那一部分。"
+                    questionText = "雪香云蔚亭在拙政园中部格局中，最适合被理解为哪类空间节点？",
+                    options = new[] { "一池三岛中岛上的登临观景点", "住宅区深处的封闭书房", "园门外侧的街巷牌楼", "水面中央的戏台基座" },
+                    correctOptionIndex = 0,
+                    correctFeedback = "回答正确。雪香云蔚亭处在中部一池三岛的山岛体系中，是登临、观水、回望的重要节点。",
+                    wrongFeedback = "提示：它不是住宅建筑，而是中部水院山岛上的亭式观景点。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-02",
-                    questionText = "“雪香”在亭名中主要指向哪一种植物意象？",
-                    options = new[] { "梅花", "荷花", "枇杷", "竹子" },
+                    questionText = "从建筑形制看，雪香云蔚亭更接近哪一种园林建筑特色？",
+                    options = new[] { "尺度轻巧、开敞取景的矩形方亭", "高层密檐佛塔", "临街商业楼阁", "封闭式居住房间" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。“雪香”点出梅花如雪、暗香浮动的意象。",
-                    wrongFeedback = "提示：这里的香气与冬春赏花有关，花色常被联想到雪。"
+                    correctFeedback = "回答正确。雪香云蔚亭可按矩形方亭来理解，体量不大，却能承载停驻和观景功能。",
+                    wrongFeedback = "提示：它的重点不是高大封闭，而是亭类建筑轻巧、开敞、可观景的特征。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-03",
-                    questionText = "“云蔚”最贴近下列哪一种景象？",
-                    options = new[] { "水面结冰", "花木繁盛，如云蒸腾", "亭子临街", "屋檐积雨" },
-                    correctOptionIndex = 1,
-                    correctFeedback = "回答正确。“云蔚”写出花木繁盛、云气蒸腾般的景象。",
-                    wrongFeedback = "提示：这个词不是说天气，而是在写花木盛放时的蓬勃气象。"
+                    questionText = "“雪香云蔚亭”题名中的“雪香”，主要把哪种文化意象带入场景？",
+                    options = new[] { "梅花如雪、暗香浮动的清雅意境", "荷叶连天、暑气蒸腾的夏景", "稻谷成熟、农事丰收的田园景", "松涛入耳、海浪翻涌的远景" },
+                    correctOptionIndex = 0,
+                    correctFeedback = "回答正确。“雪香”常让人联想到梅花、雪色与幽香，把植物审美写进亭名。",
+                    wrongFeedback = "提示：这里的“香”与梅花有关，不是普通气味描写。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-04",
-                    questionText = "雪香云蔚亭又常被理解为哪一个季节的赏景亭？",
-                    options = new[] { "春亭", "夏亭", "秋亭", "冬亭" },
-                    correctOptionIndex = 3,
-                    correctFeedback = "回答正确。雪香云蔚亭常与冬日赏梅、雪意清香联系在一起。",
-                    wrongFeedback = "提示：亭名里的“雪”和梅香，指向的是最清寒的一季。"
+                    questionText = "从场景视线关系看，雪香云蔚亭与远香堂一带形成的体验更接近哪一种？",
+                    options = new[] { "在山岛与厅堂之间形成可互相观看的水院层次", "二者完全封闭，彼此没有景观联系", "亭只服务室内陈设，不参与水院构图", "远香堂只是背景贴图，不属于园林空间" },
+                    correctOptionIndex = 0,
+                    correctFeedback = "回答正确。雪香云蔚亭所在山岛与远香堂方向的视线关系，能强化中部水院的空间层次。",
+                    wrongFeedback = "提示：拙政园中部常通过水面、山岛、厅堂互相成景，而不是让建筑孤立存在。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-05",
-                    questionText = "从空间关系看，雪香云蔚亭所在的山岛与哪座亭常被并列观看？",
-                    options = new[] { "待霜亭", "天泉亭", "塔影亭", "沧浪亭" },
+                    questionText = "雪香云蔚亭的历史底蕴，应放在拙政园怎样的整体背景中理解？",
+                    options = new[] { "明代文人园林传统延续下的中部山水空间", "近代工厂厂区的附属休息亭", "城市道路交通设施的一部分", "皇家宫殿正殿前的礼仪建筑" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。中部水池山岛上，雪香云蔚亭与待霜亭形成呼应。",
-                    wrongFeedback = "提示：另一座亭也在中部山岛体系中，名字带有秋意。"
+                    correctFeedback = "回答正确。它的历史底蕴要联系拙政园明代以来的文人园林传统和中部水院格局来看。",
+                    wrongFeedback = "提示：这座亭属于拙政园历史园林语境，不是现代功能性小品。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-06",
-                    questionText = "玩家最后“登亭回望”最能呼应雪香云蔚亭的哪种游园价值？",
-                    options = new[] { "储物", "登高观景、回望全园", "售票检票", "封闭道路" },
-                    correctOptionIndex = 1,
-                    correctFeedback = "回答正确。登亭回望把知识转化成游园动作，让结尾自然落在观景体验上。",
-                    wrongFeedback = "提示：亭不仅是建筑名称，也是让人停步、观看、回味的地点。"
+                    questionText = "雪香云蔚亭设于中岛高处，对玩家“登亭回望”的意义是什么？",
+                    options = new[] { "借较高视点回看水面、山石和园中建筑关系", "把玩家带离园林，进入完全无景空间", "只用于触发分数结算，与场景无关", "强调室内封闭感，避免看到水面" },
+                    correctOptionIndex = 0,
+                    correctFeedback = "回答正确。登上雪香云蔚亭，回望的是山岛、水面、远处建筑共同组成的园林画面。",
+                    wrongFeedback = "提示：最后的回望应该落在这个场景的空间关系，而不是单纯完成答题。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-07",
-                    questionText = "雪香云蔚亭周边常以哪类植物来强化题名意境？",
-                    options = new[] { "梅树", "棕榈", "仙人掌", "芭蕉" },
+                    questionText = "雪香云蔚亭将“梅花”意象写入题名，体现了苏州园林怎样的文化表达？",
+                    options = new[] { "用植物、季节和诗意命名提升建筑内涵", "只说明亭子旁边必须摆放盆景", "强调建筑材料必须使用白石", "把亭子改造成储藏花木的空间" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。亭旁植梅，能强化梅花似雪、暗香浮动的意境。",
-                    wrongFeedback = "提示：题名中的“雪香”已经藏着答案。"
+                    correctFeedback = "回答正确。园林题名常把梅花、季节、诗意和人的观赏经验压缩进建筑名称。",
+                    wrongFeedback = "提示：这里考的是亭名背后的文化意象，不是植物摆放数量。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-08",
-                    questionText = "雪香云蔚亭的形制描述，哪一项更贴近常见介绍？",
-                    options = new[] { "质朴轻快的方亭或矩形亭", "高层佛塔", "水上戏台", "城门箭楼" },
+                    questionText = "如果第六章以雪香云蔚亭作为收束场景，题目最应考察什么？",
+                    options = new[] { "亭名文化、山岛位置、建筑形制和拙政园历史底蕴", "按钮顺序和答题速度", "玩家是否记住所有 UI 文案", "亭子是否能作为普通传送门" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。常见介绍会强调它质朴轻快、立于山岛上的亭式建筑。",
-                    wrongFeedback = "提示：它是园林中的亭，不是塔、戏台或城门。"
+                    correctFeedback = "回答正确。第六章的重点应落在雪香云蔚亭这个场景自身的文化、建筑特色和历史底蕴。",
+                    wrongFeedback = "提示：这不是操作题，而是围绕当前亭景本身的文化理解题。"
                 }
             };
         }

@@ -61,6 +61,24 @@ namespace ZhuozhengYuan.Tests.EditMode
             Assert.AreEqual(true, GetField(saveData, "chapter02PageCollected"));
         }
 
+        [Test]
+        public void DefaultQuestionBank_ShouldFocusOnXiaoFeihongArchitecturalCulture()
+        {
+            Type directorType = Type.GetType("ZhuozhengYuan.Chapter02Director, Assembly-CSharp");
+            Assert.IsNotNull(directorType, "Chapter02Director was not found.");
+
+            Array questionBank = InvokeCreateDefaultQuestionBank(directorType);
+
+            Assert.GreaterOrEqual(questionBank.Length, 8);
+            AssertQuestionBankContains(questionBank, "\u5c0f\u98de\u8679");
+            AssertQuestionBankContains(questionBank, "\u5eca\u6865");
+            AssertQuestionBankContains(questionBank, "\u62d9\u653f\u56ed\u4e2d\u90e8");
+            AssertQuestionBankContains(questionBank, "\u6c5f\u5357\u6c34\u4e61");
+            AssertQuestionBankContains(questionBank, "\u5012\u5f71\u5982\u8679");
+            AssertQuestionBankContains(questionBank, "\u6e38\u7ebf");
+            AssertQuestionBankContains(questionBank, "\u5386\u53f2\u56ed\u6797");
+        }
+
         private static bool InvokeShouldShowReachTriggerObjective(Type directorType, object saveData)
         {
             MethodInfo method = directorType.GetMethod("ShouldShowReachTriggerObjective", BindingFlags.Static | BindingFlags.NonPublic);
@@ -73,6 +91,53 @@ namespace ZhuozhengYuan.Tests.EditMode
             MethodInfo method = directorType.GetMethod("TryAwardChapter02Page", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.IsNotNull(method, "TryAwardChapter02Page was not found.");
             return (bool)method.Invoke(null, new[] { saveData, totalPages });
+        }
+
+        private static Array InvokeCreateDefaultQuestionBank(Type directorType)
+        {
+            MethodInfo method = directorType.GetMethod("CreateDefaultQuestionBank", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.IsNotNull(method, "CreateDefaultQuestionBank was not found.");
+            return method.Invoke(null, null) as Array;
+        }
+
+        private static void AssertQuestionBankContains(Array questionBank, string expectedText)
+        {
+            foreach (object question in questionBank)
+            {
+                if (Contains(GetField(question, "questionText"), expectedText)
+                    || Contains(GetField(question, "correctFeedback"), expectedText)
+                    || Contains(GetField(question, "wrongFeedback"), expectedText)
+                    || OptionsContain(GetField(question, "options") as string[], expectedText))
+                {
+                    return;
+                }
+            }
+
+            Assert.Fail("Question bank should contain architectural culture text: " + expectedText);
+        }
+
+        private static bool OptionsContain(string[] options, string expectedText)
+        {
+            if (options == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < options.Length; index++)
+            {
+                if (Contains(options[index], expectedText))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool Contains(object value, string expectedText)
+        {
+            string text = value as string;
+            return !string.IsNullOrEmpty(text) && text.Contains(expectedText);
         }
 
         private static void SetField(object target, string fieldName, object value)

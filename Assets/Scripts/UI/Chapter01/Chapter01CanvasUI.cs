@@ -43,6 +43,7 @@ namespace ZhuozhengYuan
         public TextMeshProUGUI finaleHistoryHintText;
         public float finaleHistoryScrollSpeed = 42f;
         public float finaleHistoryStartOffsetY = -260f;
+        public string finaleHistoryEndText = "游玩结束";
 
         [Header("Dialogue")]
         public GameObject dialoguePanel;
@@ -99,6 +100,10 @@ namespace ZhuozhengYuan
         private Action<int> _chapter02QuizSelectedCallback;
         private bool _isFinaleHistoryOpen;
         private float _finaleHistoryShownAtRealtime;
+        private Vector2 _finaleHistoryTitleBasePosition;
+        private Vector2 _finaleHistoryBodyBasePosition;
+        private Vector2 _finaleHistoryHintBasePosition;
+        private bool _finaleHistoryEndShown;
         private Coroutine _toastCoroutine;
         private Coroutine _resultCoroutine;
         private Coroutine _pageRewardCoroutine;
@@ -391,6 +396,7 @@ namespace ZhuozhengYuan
         public void ShowFinaleHistory(string title, string body)
         {
             EnsureFallbackHierarchy();
+            ApplyFinaleHistoryPanel();
             SetActiveSafe(finaleHistoryPanel, true);
 
             if (finaleHistoryTitleText != null)
@@ -405,11 +411,13 @@ namespace ZhuozhengYuan
 
             if (finaleHistoryHintText != null)
             {
-                finaleHistoryHintText.text = "游历至此落幕";
+                finaleHistoryHintText.text = string.Empty;
             }
 
             _isFinaleHistoryOpen = true;
             _finaleHistoryShownAtRealtime = Time.unscaledTime;
+            _finaleHistoryEndShown = false;
+            CaptureFinaleHistoryBasePositions();
             ApplyFinaleHistoryScrollPosition(finaleHistoryStartOffsetY);
 
             if (finaleHistoryPanel != null)
@@ -724,17 +732,50 @@ namespace ZhuozhengYuan
             }
 
             float elapsed = Mathf.Max(0f, Time.unscaledTime - _finaleHistoryShownAtRealtime);
-            ApplyFinaleHistoryScrollPosition(finaleHistoryStartOffsetY + (elapsed * Mathf.Max(1f, finaleHistoryScrollSpeed)));
+            float scrollOffsetY = finaleHistoryStartOffsetY + (elapsed * Mathf.Max(1f, finaleHistoryScrollSpeed));
+            ApplyFinaleHistoryScrollPosition(scrollOffsetY);
+            if (!_finaleHistoryEndShown && scrollOffsetY >= GetFinaleHistoryEndOffsetY())
+            {
+                _finaleHistoryEndShown = true;
+                if (finaleHistoryHintText != null)
+                {
+                    finaleHistoryHintText.text = finaleHistoryEndText ?? string.Empty;
+                }
+            }
         }
 
         private void ApplyFinaleHistoryScrollPosition(float offsetY)
         {
-            SetAnchoredPositionY(finaleHistoryTitleText, offsetY);
-            SetAnchoredPositionY(finaleHistoryBodyText, offsetY);
-            SetAnchoredPositionY(finaleHistoryHintText, offsetY);
+            SetAnchoredPosition(finaleHistoryTitleText, _finaleHistoryTitleBasePosition + new Vector2(0f, offsetY));
+            SetAnchoredPosition(finaleHistoryBodyText, _finaleHistoryBodyBasePosition + new Vector2(0f, offsetY));
+            SetAnchoredPosition(finaleHistoryHintText, _finaleHistoryHintBasePosition);
         }
 
-        private static void SetAnchoredPositionY(TextMeshProUGUI text, float offsetY)
+        private void CaptureFinaleHistoryBasePositions()
+        {
+            _finaleHistoryTitleBasePosition = GetAnchoredPosition(finaleHistoryTitleText);
+            _finaleHistoryBodyBasePosition = GetAnchoredPosition(finaleHistoryBodyText);
+            _finaleHistoryHintBasePosition = GetAnchoredPosition(finaleHistoryHintText);
+        }
+
+        private float GetFinaleHistoryEndOffsetY()
+        {
+            float bodyHeight = finaleHistoryBodyText != null ? Mathf.Max(360f, finaleHistoryBodyText.preferredHeight) : 520f;
+            return (ReferenceResolution.y * 0.5f) + bodyHeight + 180f;
+        }
+
+        private static Vector2 GetAnchoredPosition(TextMeshProUGUI text)
+        {
+            if (text == null)
+            {
+                return Vector2.zero;
+            }
+
+            RectTransform rectTransform = text.GetComponent<RectTransform>();
+            return rectTransform != null ? rectTransform.anchoredPosition : Vector2.zero;
+        }
+
+        private static void SetAnchoredPosition(TextMeshProUGUI text, Vector2 anchoredPosition)
         {
             if (text == null)
             {
@@ -747,7 +788,7 @@ namespace ZhuozhengYuan
                 return;
             }
 
-            rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, offsetY);
+            rectTransform.anchoredPosition = anchoredPosition;
         }
 
         private void HideDialogueImmediate()
@@ -1294,7 +1335,7 @@ namespace ZhuozhengYuan
             SetRect(finaleHistoryPanel, new Vector2(0.5f, 0.5f), ReferenceResolution, Vector2.zero);
             SetTextBox(finaleHistoryTitleText, new Vector2(260f, 700f), new Vector2(-260f, -210f), 56f, TextAlignmentOptions.TopLeft);
             SetTextBox(finaleHistoryBodyText, new Vector2(260f, 292f), new Vector2(-260f, -360f), 32f, TextAlignmentOptions.TopLeft);
-            SetTextBox(finaleHistoryHintText, new Vector2(260f, 148f), new Vector2(-260f, -878f), 26f, TextAlignmentOptions.BottomRight);
+            SetTextBox(finaleHistoryHintText, new Vector2(260f, 72f), new Vector2(-260f, -808f), 42f, TextAlignmentOptions.Center);
 
             if (finaleHistoryTitleText != null)
             {
@@ -1310,6 +1351,7 @@ namespace ZhuozhengYuan
             if (finaleHistoryHintText != null)
             {
                 finaleHistoryHintText.color = new Color(0.36f, 0.42f, 0.35f, 1f);
+                finaleHistoryHintText.fontStyle = FontStyles.Bold;
             }
         }
 
