@@ -17,12 +17,19 @@ namespace ZhuozhengYuan
         private string _directionResultTitle = string.Empty;
         private string _directionResultText = string.Empty;
         private float _directionResultUntilTime;
+        private string _finaleHistoryTitle = string.Empty;
+        private string _finaleHistoryBody = string.Empty;
+        private bool _finaleHistoryOpen;
+        private float _finaleHistoryShownAtTime;
+        private float _finaleHistoryScrollSpeed = 42f;
+        private float _finaleHistoryStartOffsetY = 220f;
         private Color _directionResultAccent = new Color(0.85f, 0.9f, 1f, 1f);
         private Color _directionFlashColor = new Color(0.85f, 0.9f, 1f, 0f);
         private float _directionFlashStartTime = -10f;
         private float _directionFlashUntilTime = -10f;
         private int _collectedPages;
         private float _fadeAlpha;
+        private Color _fadeColor = Color.black;
 
         private DialogueLine[] _activeDialogue;
         private int _dialogueIndex;
@@ -74,6 +81,12 @@ namespace ZhuozhengYuan
             _fadeAlpha = Mathf.Clamp01(alpha);
         }
 
+        public void SetFadeColor(Color color)
+        {
+            color.a = 1f;
+            _fadeColor = color;
+        }
+
         public void SetPageCount(int currentPages, int maxPages)
         {
             _collectedPages = currentPages;
@@ -108,6 +121,14 @@ namespace ZhuozhengYuan
             _directionResultAccent = accentColor;
             _directionResultUntilTime = Time.unscaledTime + duration;
             ShowDirectionFlash(accentColor, 0.55f);
+        }
+
+        public void ShowFinaleHistory(string title, string body)
+        {
+            _finaleHistoryTitle = title ?? string.Empty;
+            _finaleHistoryBody = body ?? string.Empty;
+            _finaleHistoryOpen = true;
+            _finaleHistoryShownAtTime = Time.unscaledTime;
         }
 
         public void ShowDirectionFlash(Color accentColor, float duration = 0.55f)
@@ -263,6 +284,8 @@ namespace ZhuozhengYuan
             {
                 DrawFadeOverlay();
             }
+
+            DrawFinaleHistory();
         }
 
         private void DrawPageCounter()
@@ -455,9 +478,32 @@ namespace ZhuozhengYuan
             }
 
             Color previousColor = GUI.color;
-            GUI.color = new Color(0f, 0f, 0f, Mathf.Clamp01(_fadeAlpha));
+            GUI.color = new Color(_fadeColor.r, _fadeColor.g, _fadeColor.b, Mathf.Clamp01(_fadeAlpha));
             GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
             GUI.color = previousColor;
+        }
+
+        private void DrawFinaleHistory()
+        {
+            if (!_finaleHistoryOpen)
+            {
+                return;
+            }
+
+            Color previousColor = GUI.color;
+            GUI.color = new Color(0.97f, 0.965f, 0.94f, 1f);
+            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
+            GUI.color = previousColor;
+
+            float width = Mathf.Min(980f, Screen.width - 160f);
+            float scrollY = _finaleHistoryStartOffsetY - ((Time.unscaledTime - _finaleHistoryShownAtTime) * Mathf.Max(1f, _finaleHistoryScrollSpeed));
+            Rect titleRect = new Rect((Screen.width - width) * 0.5f, (Screen.height * 0.2f) + scrollY, width, 72f);
+            Rect bodyRect = new Rect(titleRect.x, titleRect.y + 110f, width, 280f);
+            Rect hintRect = new Rect(titleRect.x, Screen.height - 110f, width, 32f);
+
+            GUI.Label(titleRect, _finaleHistoryTitle, _titleStyle);
+            GUI.Label(bodyRect, _finaleHistoryBody, _bodyStyle);
+            GUI.Label(hintRect, "游历至此落幕", _smallStyle);
         }
 
         private void AdvanceDialogue()

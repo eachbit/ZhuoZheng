@@ -37,6 +37,8 @@ namespace ZhuozhengYuan
         public IntroSequenceController introController;
         public Chapter01Director chapter01Director;
         public Chapter02Director chapter02Director;
+        public Chapter06Director chapter06Director;
+        public Chapter06Director[] chapter06Directors;
         public Chapter01AuthoredRouteGuide chapter01RouteGuide;
         public GardenModelHiddenCollisionBuilder hiddenCollisionBuilder;
         public bool createStartAreaGroundIfNeeded = true;
@@ -111,6 +113,7 @@ namespace ZhuozhengYuan
         private bool _chapter02QuizActive;
         private IChapter01RuntimeUIPresenter _chapter01Presenter;
         private IChapter02QuizPresenter _chapter02QuizPresenter;
+        private Chapter06Director[] _resolvedChapter06Directors = Array.Empty<Chapter06Director>();
         private bool _chapter01RouteResolved;
         private List<Vector3> _chapter01ResolvedRoutePath;
         private Transform _chapter01ResolvedLeftGate;
@@ -186,6 +189,8 @@ namespace ZhuozhengYuan
                 chapter02Director.Initialize(this, CurrentSaveData);
             }
 
+            InitializeChapter06Directors();
+
             EnsureChapter01RouteGuide();
             if (chapter01RouteGuide != null)
             {
@@ -228,6 +233,11 @@ namespace ZhuozhengYuan
             SetObjective(objective);
         }
 
+        public void SetChapter06Objective(string objective)
+        {
+            SetObjective(objective);
+        }
+
         public void ShowToast(string message, float duration = 2.2f)
         {
             _chapter01Presenter?.ShowToast(message, duration);
@@ -247,6 +257,21 @@ namespace ZhuozhengYuan
         public void ShowDirectionResult(string title, string message, Color accentColor, float duration = 2.6f)
         {
             _chapter01Presenter?.ShowDirectionResult(title, message, accentColor, duration);
+        }
+
+        public void ShowFinaleHistory(string title, string body)
+        {
+            _chapter01Presenter?.ShowFinaleHistory(title, body);
+        }
+
+        public void SetFadeColor(Color color)
+        {
+            _chapter01Presenter?.SetFadeColor(color);
+        }
+
+        public void SetFadeAlpha(float alpha)
+        {
+            _chapter01Presenter?.SetFadeAlpha(alpha);
         }
 
         public void ShowDialogue(DialogueLine[] lines, Action onCompleted)
@@ -352,6 +377,8 @@ namespace ZhuozhengYuan
             {
                 chapter02Director.OnIntroFinished();
             }
+
+            NotifyChapter06IntroFinished();
         }
 
         public void SetDialogueActive(bool isActive)
@@ -486,6 +513,82 @@ namespace ZhuozhengYuan
             }
 
             return null;
+        }
+
+        private void InitializeChapter06Directors()
+        {
+            List<Chapter06Director> directors = new List<Chapter06Director>();
+
+            if (chapter06Directors != null)
+            {
+                for (int index = 0; index < chapter06Directors.Length; index++)
+                {
+                    AddUniqueChapter06Director(directors, chapter06Directors[index]);
+                }
+            }
+
+            AddUniqueChapter06Director(directors, chapter06Director);
+
+            if (directors.Count == 0)
+            {
+                Chapter06Director[] foundDirectors = FindObjectsOfType<Chapter06Director>(true);
+                for (int index = 0; index < foundDirectors.Length; index++)
+                {
+                    AddUniqueChapter06Director(directors, foundDirectors[index]);
+                }
+            }
+
+            _resolvedChapter06Directors = directors.ToArray();
+            chapter06Directors = _resolvedChapter06Directors;
+
+            if (chapter06Director == null)
+            {
+                chapter06Director = ResolvePrimaryChapter06Director(_resolvedChapter06Directors);
+            }
+
+            for (int index = 0; index < _resolvedChapter06Directors.Length; index++)
+            {
+                _resolvedChapter06Directors[index].Initialize(this, CurrentSaveData);
+            }
+        }
+
+        private void NotifyChapter06IntroFinished()
+        {
+            for (int index = 0; index < _resolvedChapter06Directors.Length; index++)
+            {
+                if (_resolvedChapter06Directors[index] != null)
+                {
+                    _resolvedChapter06Directors[index].OnIntroFinished();
+                }
+            }
+        }
+
+        private static Chapter06Director ResolvePrimaryChapter06Director(Chapter06Director[] directors)
+        {
+            if (directors == null || directors.Length == 0)
+            {
+                return null;
+            }
+
+            for (int index = 0; index < directors.Length; index++)
+            {
+                if (directors[index] != null && directors[index].triggerRole == Chapter06TriggerRole.QuizStart)
+                {
+                    return directors[index];
+                }
+            }
+
+            return directors[0];
+        }
+
+        private static void AddUniqueChapter06Director(List<Chapter06Director> directors, Chapter06Director director)
+        {
+            if (directors == null || director == null || directors.Contains(director))
+            {
+                return;
+            }
+
+            directors.Add(director);
         }
 
         private IChapter01RuntimeUIPresenter ResolveChapter01Presenter()

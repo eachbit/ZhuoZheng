@@ -36,6 +36,14 @@ namespace ZhuozhengYuan
         public TextMeshProUGUI pageRewardTitleText;
         public TextMeshProUGUI pageRewardBodyText;
 
+        [Header("Finale History")]
+        public GameObject finaleHistoryPanel;
+        public TextMeshProUGUI finaleHistoryTitleText;
+        public TextMeshProUGUI finaleHistoryBodyText;
+        public TextMeshProUGUI finaleHistoryHintText;
+        public float finaleHistoryScrollSpeed = 42f;
+        public float finaleHistoryStartOffsetY = -260f;
+
         [Header("Dialogue")]
         public GameObject dialoguePanel;
         public TextMeshProUGUI dialogueSpeakerText;
@@ -71,6 +79,7 @@ namespace ZhuozhengYuan
 
         [Header("Fade")]
         public CanvasGroup fadeCanvasGroup;
+        public Image fadeImage;
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
         private const string DefaultDirectionChoiceTitle = "请为园中水脉选择去向";
@@ -88,6 +97,8 @@ namespace ZhuozhengYuan
         private bool _isChapter02QuizOpen;
         private string[] _chapter02QuizOptions = Array.Empty<string>();
         private Action<int> _chapter02QuizSelectedCallback;
+        private bool _isFinaleHistoryOpen;
+        private float _finaleHistoryShownAtRealtime;
         private Coroutine _toastCoroutine;
         private Coroutine _resultCoroutine;
         private Coroutine _pageRewardCoroutine;
@@ -129,6 +140,7 @@ namespace ZhuozhengYuan
             ui.HideToastImmediate();
             ui.HideResultImmediate();
             ui.HidePageRewardImmediate();
+            ui.HideFinaleHistoryImmediate();
             ui.HideDialogueImmediate();
             ui.HideDirectionChoiceImmediate();
             ui.HideGateCalibration();
@@ -174,6 +186,7 @@ namespace ZhuozhengYuan
             HideToastImmediate();
             HideResultImmediate();
             HidePageRewardImmediate();
+            HideFinaleHistoryImmediate();
             HideDialogueImmediate();
             HideDirectionChoiceImmediate();
             HideGateCalibration();
@@ -221,6 +234,8 @@ namespace ZhuozhengYuan
 
         private void Update()
         {
+            UpdateFinaleHistoryScroll();
+
             if (IsDialogueOpen && Input.GetKeyDown(KeyCode.Space))
             {
                 AdvanceDialogue();
@@ -371,6 +386,36 @@ namespace ZhuozhengYuan
             }
 
             _resultCoroutine = StartCoroutine(HideAfterDelay(duration, HideResultImmediate));
+        }
+
+        public void ShowFinaleHistory(string title, string body)
+        {
+            EnsureFallbackHierarchy();
+            SetActiveSafe(finaleHistoryPanel, true);
+
+            if (finaleHistoryTitleText != null)
+            {
+                finaleHistoryTitleText.text = title ?? string.Empty;
+            }
+
+            if (finaleHistoryBodyText != null)
+            {
+                finaleHistoryBodyText.text = body ?? string.Empty;
+            }
+
+            if (finaleHistoryHintText != null)
+            {
+                finaleHistoryHintText.text = "游历至此落幕";
+            }
+
+            _isFinaleHistoryOpen = true;
+            _finaleHistoryShownAtRealtime = Time.unscaledTime;
+            ApplyFinaleHistoryScrollPosition(finaleHistoryStartOffsetY);
+
+            if (finaleHistoryPanel != null)
+            {
+                finaleHistoryPanel.transform.SetAsLastSibling();
+            }
         }
 
         public void ShowDialogue(DialogueLine[] dialogueLines, Action onCompleted)
@@ -545,6 +590,24 @@ namespace ZhuozhengYuan
             fadeCanvasGroup.interactable = fadeCanvasGroup.alpha > 0.001f;
         }
 
+        public void SetFadeColor(Color color)
+        {
+            EnsureFallbackHierarchy();
+
+            Image image = fadeImage;
+            if (image == null && fadeCanvasGroup != null)
+            {
+                image = fadeCanvasGroup.GetComponent<Image>();
+                fadeImage = image;
+            }
+
+            if (image != null)
+            {
+                color.a = 1f;
+                image.color = color;
+            }
+        }
+
         private void AdvanceDialogue()
         {
             if (!IsDialogueOpen)
@@ -647,6 +710,46 @@ namespace ZhuozhengYuan
             SetActiveSafe(pageRewardPanel, false);
         }
 
+        private void HideFinaleHistoryImmediate()
+        {
+            _isFinaleHistoryOpen = false;
+            SetActiveSafe(finaleHistoryPanel, false);
+        }
+
+        private void UpdateFinaleHistoryScroll()
+        {
+            if (!_isFinaleHistoryOpen)
+            {
+                return;
+            }
+
+            float elapsed = Mathf.Max(0f, Time.unscaledTime - _finaleHistoryShownAtRealtime);
+            ApplyFinaleHistoryScrollPosition(finaleHistoryStartOffsetY + (elapsed * Mathf.Max(1f, finaleHistoryScrollSpeed)));
+        }
+
+        private void ApplyFinaleHistoryScrollPosition(float offsetY)
+        {
+            SetAnchoredPositionY(finaleHistoryTitleText, offsetY);
+            SetAnchoredPositionY(finaleHistoryBodyText, offsetY);
+            SetAnchoredPositionY(finaleHistoryHintText, offsetY);
+        }
+
+        private static void SetAnchoredPositionY(TextMeshProUGUI text, float offsetY)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            RectTransform rectTransform = text.GetComponent<RectTransform>();
+            if (rectTransform == null)
+            {
+                return;
+            }
+
+            rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, offsetY);
+        }
+
         private void HideDialogueImmediate()
         {
             SetActiveSafe(dialoguePanel, false);
@@ -715,6 +818,9 @@ namespace ZhuozhengYuan
                 && pageRewardPanel != null
                 && pageRewardTitleText != null
                 && pageRewardBodyText != null
+                && finaleHistoryPanel != null
+                && finaleHistoryTitleText != null
+                && finaleHistoryBodyText != null
                 && dialoguePanel != null
                 && dialogueBodyText != null
                 && directionChoicePanel != null
@@ -767,6 +873,12 @@ namespace ZhuozhengYuan
             pageRewardTitleText = EnsureText("PageRewardTitleText", pageRewardPanel.transform, "\u83b7\u5f97\u6b8b\u9875", 38, FontStyles.Bold, new Vector2(34f, 92f), new Vector2(-34f, -20f), TextAlignmentOptions.TopLeft);
             pageRewardBodyText = EnsureText("PageRewardBodyText", pageRewardPanel.transform, "\u5df2\u83b7\u5f97\u300a\u957f\u7269\u5fd7\u300b\u7b2c\u4e8c\u5f20\u6b8b\u9875", 28, FontStyles.Normal, new Vector2(34f, 24f), new Vector2(-34f, -88f), TextAlignmentOptions.TopLeft);
 
+            finaleHistoryPanel = EnsurePanel("FinaleHistoryPanel", canvas.transform, ReferenceResolution, Vector2.zero, new Color(0.97f, 0.965f, 0.94f, 1f), new Vector2(0.5f, 0.5f));
+            finaleHistoryTitleText = EnsureText("FinaleHistoryTitleText", finaleHistoryPanel.transform, "拙政园", 56, FontStyles.Bold, new Vector2(260f, 700f), new Vector2(-260f, -210f), TextAlignmentOptions.TopLeft);
+            finaleHistoryBodyText = EnsureText("FinaleHistoryBodyText", finaleHistoryPanel.transform, "这里显示拙政园历史背景。", 32, FontStyles.Normal, new Vector2(260f, 292f), new Vector2(-260f, -360f), TextAlignmentOptions.TopLeft);
+            finaleHistoryHintText = EnsureText("FinaleHistoryHintText", finaleHistoryPanel.transform, "游历至此落幕", 26, FontStyles.Normal, new Vector2(260f, 148f), new Vector2(-260f, -878f), TextAlignmentOptions.BottomRight);
+            SetActiveSafe(finaleHistoryPanel, false);
+
             dialoguePanel = EnsurePanel("DialoguePanel", canvas.transform, new Vector2(980f, 280f), new Vector2(0f, 46f), new Color(0.06f, 0.09f, 0.08f, 0.95f), new Vector2(0.5f, 0f));
             dialogueSpeakerText = EnsureText("DialogueSpeakerText", dialoguePanel.transform, "园中回响", 30, FontStyles.Bold, new Vector2(28f, 180f), new Vector2(-28f, -20f), TextAlignmentOptions.TopLeft);
             dialogueBodyText = EnsureText("DialogueBodyText", dialoguePanel.transform, "这里显示对话内容。", 28, FontStyles.Normal, new Vector2(28f, 76f), new Vector2(-28f, -68f), TextAlignmentOptions.TopLeft);
@@ -813,6 +925,7 @@ namespace ZhuozhengYuan
             chapter02QuizHintText = EnsureText("Chapter02QuizHintText", chapter02QuizPanel.transform, "\u6309 1/2/3/4 \u9009\u62e9\u7b54\u6848", 26, FontStyles.Normal, new Vector2(54f, 28f), new Vector2(-54f, -546f), TextAlignmentOptions.BottomLeft);
 
             GameObject fadeObject = EnsureImage("FadeOverlay", canvas.transform, new Color(0f, 0f, 0f, 1f), Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.one, Vector2.zero);
+            fadeImage = fadeObject.GetComponent<Image>();
             fadeCanvasGroup = fadeObject.GetComponent<CanvasGroup>();
             if (fadeCanvasGroup == null)
             {
@@ -974,6 +1087,9 @@ namespace ZhuozhengYuan
             ApplyFont(resultBodyText, false);
             ApplyFont(pageRewardTitleText, true);
             ApplyFont(pageRewardBodyText, false);
+            ApplyFont(finaleHistoryTitleText, true);
+            ApplyFont(finaleHistoryBodyText, false);
+            ApplyFont(finaleHistoryHintText, false);
             ApplyFont(dialogueSpeakerText, true);
             ApplyFont(dialogueBodyText, false);
             ApplyFont(dialogueHintText, false);
@@ -1015,6 +1131,7 @@ namespace ZhuozhengYuan
             ApplyPanelChrome(toastPanel, PanelInkColor);
             ApplyPanelChrome(resultPanel, PanelInkColor);
             ApplyPanelChrome(pageRewardPanel, PanelInkColor);
+            ApplyFinaleHistoryPanel();
             ApplyPanelChrome(dialoguePanel, PanelInkColor);
             ApplyPanelChrome(directionChoicePanel, PanelInkColor);
             ApplyPanelChrome(gateCalibrationPanel, PanelInkColor);
@@ -1030,8 +1147,9 @@ namespace ZhuozhengYuan
             SetRect(interactionPromptPanel, new Vector2(0.5f, 0f), new Vector2(940f, 118f), new Vector2(0f, 92f));
             SetTextBox(interactionPromptText, new Vector2(38f, 14f), new Vector2(-38f, -14f), 42f, TextAlignmentOptions.MidlineLeft);
 
-            SetRect(toastPanel, new Vector2(0.5f, 1f), new Vector2(860f, 146f), new Vector2(0f, -40f));
-            SetTextBox(toastText, new Vector2(40f, 18f), new Vector2(-40f, -18f), 34f, TextAlignmentOptions.TopLeft);
+            SetRect(toastPanel, new Vector2(0.5f, 1f), new Vector2(980f, 186f), new Vector2(0f, -40f));
+            SetTextBox(toastText, new Vector2(54f, 24f), new Vector2(-54f, -24f), 30f, TextAlignmentOptions.TopLeft);
+            ConstrainToastText(toastText);
 
             SetRect(resultPanel, new Vector2(0.5f, 1f), new Vector2(980f, 210f), new Vector2(0f, -184f));
             SetTextBox(resultTitleText, new Vector2(40f, 112f), new Vector2(-40f, -28f), 46f, TextAlignmentOptions.TopLeft);
@@ -1156,6 +1274,45 @@ namespace ZhuozhengYuan
             ApplyGardenFrame(panel.transform);
         }
 
+        private void ApplyFinaleHistoryPanel()
+        {
+            if (finaleHistoryPanel == null)
+            {
+                return;
+            }
+
+            Image image = finaleHistoryPanel.GetComponent<Image>();
+            if (image == null)
+            {
+                image = finaleHistoryPanel.AddComponent<Image>();
+            }
+
+            image.sprite = null;
+            image.type = Image.Type.Simple;
+            image.color = new Color(0.97f, 0.965f, 0.94f, 1f);
+
+            SetRect(finaleHistoryPanel, new Vector2(0.5f, 0.5f), ReferenceResolution, Vector2.zero);
+            SetTextBox(finaleHistoryTitleText, new Vector2(260f, 700f), new Vector2(-260f, -210f), 56f, TextAlignmentOptions.TopLeft);
+            SetTextBox(finaleHistoryBodyText, new Vector2(260f, 292f), new Vector2(-260f, -360f), 32f, TextAlignmentOptions.TopLeft);
+            SetTextBox(finaleHistoryHintText, new Vector2(260f, 148f), new Vector2(-260f, -878f), 26f, TextAlignmentOptions.BottomRight);
+
+            if (finaleHistoryTitleText != null)
+            {
+                finaleHistoryTitleText.color = new Color(0.11f, 0.18f, 0.12f, 1f);
+            }
+
+            if (finaleHistoryBodyText != null)
+            {
+                finaleHistoryBodyText.color = new Color(0.12f, 0.16f, 0.12f, 1f);
+                finaleHistoryBodyText.lineSpacing = 18f;
+            }
+
+            if (finaleHistoryHintText != null)
+            {
+                finaleHistoryHintText.color = new Color(0.36f, 0.42f, 0.35f, 1f);
+            }
+        }
+
         private static void SetRect(GameObject target, Vector2 anchor, Vector2 size, Vector2 anchoredPosition)
         {
             if (target == null)
@@ -1203,6 +1360,20 @@ namespace ZhuozhengYuan
             text.fontSize = fontSize;
             text.alignment = alignment;
             text.enableWordWrapping = true;
+        }
+
+        private static void ConstrainToastText(TextMeshProUGUI text)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            text.enableWordWrapping = true;
+            text.enableAutoSizing = true;
+            text.fontSizeMax = Mathf.Min(text.fontSize, 31f);
+            text.fontSizeMin = 22f;
+            text.overflowMode = TextOverflowModes.Ellipsis;
         }
 
         private static Sprite GetPlaqueBackgroundSprite()

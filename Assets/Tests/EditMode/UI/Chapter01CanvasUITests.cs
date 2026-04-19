@@ -3,6 +3,7 @@ using System.Reflection;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace ZhuozhengYuan.Tests.EditMode
 {
@@ -85,10 +86,44 @@ namespace ZhuozhengYuan.Tests.EditMode
 
             MonoBehaviour ui = (MonoBehaviour)InvokeStatic(uiType, "CreateDefault");
 
+            AssertTextRectIsInset(ui, "toastText");
             AssertTextRectIsInset(ui, "interactionPromptText");
             AssertTextRectIsInset(ui, "gateCalibrationTitleText");
             AssertTextRectIsInset(ui, "gateCalibrationHintText");
             AssertTextRectIsInset(ui, "gateCalibrationControlsText");
+
+            UnityEngine.Object.DestroyImmediate(ui.gameObject);
+        }
+
+        [Test]
+        public void CreateDefault_ShouldKeepLongToastTextBoundedInsidePlaque()
+        {
+            Type uiType = Type.GetType("ZhuozhengYuan.Chapter01CanvasUI, Assembly-CSharp");
+            Assert.IsNotNull(uiType, "Chapter01CanvasUI 尚未创建。");
+
+            MonoBehaviour ui = (MonoBehaviour)InvokeStatic(uiType, "CreateDefault");
+
+            Invoke(ui, "ShowToast", "回答正确。登亭回望把知识转化成游园动作，让结尾自然落在观景体验上。", 2.2f);
+
+            GameObject panel = GetField(ui, "toastPanel") as GameObject;
+            TextMeshProUGUI toast = GetField(ui, "toastText") as TextMeshProUGUI;
+            Assert.IsNotNull(panel, "toastPanel 不存在。");
+            Assert.IsNotNull(toast, "toastText 不存在。");
+
+            RectTransform panelRect = panel.GetComponent<RectTransform>();
+            RectTransform textRect = toast.GetComponent<RectTransform>();
+            Assert.IsNotNull(panelRect, "toastPanel 缺少 RectTransform。");
+            Assert.IsNotNull(textRect, "toastText 缺少 RectTransform。");
+
+            Assert.GreaterOrEqual(panelRect.sizeDelta.x, 940f, "Toast 提示框宽度太窄，长句会横向溢出。");
+            Assert.GreaterOrEqual(panelRect.sizeDelta.y, 176f, "Toast 提示框高度太矮，双行提示会挤出边框。");
+            Assert.GreaterOrEqual(textRect.offsetMin.x, 48f, "Toast 左侧内边距不足。");
+            Assert.LessOrEqual(textRect.offsetMax.x, -48f, "Toast 右侧内边距不足。");
+            Assert.IsTrue(toast.enableWordWrapping, "Toast 文本必须允许换行。");
+            Assert.IsTrue(toast.enableAutoSizing, "Toast 文本必须允许自动收束字号。");
+            Assert.LessOrEqual(toast.fontSizeMax, 31f, "Toast 最大字号过大，容易冲出框体。");
+            Assert.GreaterOrEqual(toast.fontSizeMin, 22f, "Toast 最小字号不能小到不可读。");
+            Assert.AreEqual(TextOverflowModes.Ellipsis, toast.overflowMode, "Toast 极端长句必须被限制在框内。");
 
             UnityEngine.Object.DestroyImmediate(ui.gameObject);
         }
@@ -182,6 +217,41 @@ namespace ZhuozhengYuan.Tests.EditMode
             Assert.IsTrue(panel.activeSelf);
             Assert.AreEqual("获得残页", titleText.text);
             StringAssert.Contains("第二张残页", bodyText.text);
+
+            UnityEngine.Object.DestroyImmediate(ui.gameObject);
+        }
+
+        [Test]
+        public void ShowFinaleHistory_ShouldDisplayWhiteCurtainHistoryCard()
+        {
+            Type uiType = Type.GetType("ZhuozhengYuan.Chapter01CanvasUI, Assembly-CSharp");
+            Assert.IsNotNull(uiType, "Chapter01CanvasUI was not found.");
+
+            MonoBehaviour ui = (MonoBehaviour)InvokeStatic(uiType, "CreateDefault");
+
+            Invoke(ui, "ShowFinaleHistory", "拙政园", "明正德四年，王献臣退隐营园。");
+
+            GameObject panel = GetField(ui, "finaleHistoryPanel") as GameObject;
+            TextMeshProUGUI titleText = GetField(ui, "finaleHistoryTitleText") as TextMeshProUGUI;
+            TextMeshProUGUI bodyText = GetField(ui, "finaleHistoryBodyText") as TextMeshProUGUI;
+
+            Assert.IsNotNull(panel, "finaleHistoryPanel 不存在。");
+            Assert.IsNotNull(titleText, "finaleHistoryTitleText 不存在。");
+            Assert.IsNotNull(bodyText, "finaleHistoryBodyText 不存在。");
+            Assert.IsTrue(panel.activeSelf);
+            Assert.AreEqual("拙政园", titleText.text);
+            StringAssert.Contains("王献臣", bodyText.text);
+
+            RectTransform bodyRect = bodyText.GetComponent<RectTransform>();
+            Assert.IsNotNull(bodyRect, "finaleHistoryBodyText 缺少 RectTransform。");
+            Assert.LessOrEqual(bodyRect.anchoredPosition.y, -200f, "落幕历史正文应该从白屏下方起步滚动，而不是立即完整显示。");
+            Assert.GreaterOrEqual((float)GetField(ui, "finaleHistoryScrollSpeed"), 24f, "落幕历史正文需要向上滚动展示。");
+
+            Image panelImage = panel.GetComponent<Image>();
+            Assert.IsNotNull(panelImage, "finaleHistoryPanel 缺少白色背景。");
+            Assert.Greater(panelImage.color.r, 0.92f);
+            Assert.Greater(panelImage.color.g, 0.92f);
+            Assert.Greater(panelImage.color.b, 0.9f);
 
             UnityEngine.Object.DestroyImmediate(ui.gameObject);
         }
