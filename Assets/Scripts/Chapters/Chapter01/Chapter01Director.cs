@@ -244,6 +244,7 @@ namespace ZhuozhengYuan
             WriteBackSaveState();
             ShowChapter02RouteGuide(pagePickupPosition);
             manager.SaveProgress();
+            manager.RefreshGlobalObjective();
         }
 
         public static bool TryResolveChapter02GuideTarget(Chapter02Director chapter02Director, out Vector3 targetPosition)
@@ -340,6 +341,7 @@ namespace ZhuozhengYuan
             ApplyRuntimeState();
             WriteBackSaveState();
             manager.SaveProgress();
+            manager.RefreshGlobalObjective();
         }
 
         private void CancelGatePuzzle()
@@ -432,6 +434,7 @@ namespace ZhuozhengYuan
             ShowDirectionResultBanner(_selectedDirection, isCorrectDirection);
             WriteBackSaveState();
             manager.SaveProgress();
+            manager.RefreshGlobalObjective();
         }
 
         private void ApplyRuntimeState()
@@ -496,40 +499,7 @@ namespace ZhuozhengYuan
                 return;
             }
 
-            if (ShouldHideObjectiveAtStart())
-            {
-                manager.SetObjective(string.Empty);
-                return;
-            }
-
-            switch (CurrentState)
-            {
-                case Chapter01State.NeedOpenGates:
-                    manager.SetObjective(objectiveOpenGates);
-                    break;
-                case Chapter01State.NeedChooseFlow:
-                    manager.SetObjective(GetChooseFlowObjective());
-                    break;
-                case Chapter01State.FlowSolved:
-                case Chapter01State.PageAvailable:
-                    manager.SetObjective(objectiveCollectPage);
-                    break;
-                case Chapter01State.Completed:
-                    manager.SetObjective(objectiveCompleted);
-                    break;
-                default:
-                    manager.SetObjective(objectiveOpenGates);
-                    break;
-            }
-        }
-
-        private bool ShouldHideObjectiveAtStart()
-        {
-            return CurrentState == Chapter01State.NeedOpenGates
-                && !_leftGateOpened
-                && !_rightGateOpened
-                && !_pageCollected
-                && string.IsNullOrEmpty(_selectedDirection);
+            manager.RefreshGlobalObjective();
         }
 
         private void WriteBackSaveState()

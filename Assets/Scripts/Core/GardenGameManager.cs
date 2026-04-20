@@ -41,10 +41,6 @@ namespace ZhuozhengYuan
         public Chapter06Director[] chapter06Directors;
         public Chapter01AuthoredRouteGuide chapter01RouteGuide;
         public GardenModelHiddenCollisionBuilder hiddenCollisionBuilder;
-        public bool createStartAreaGroundIfNeeded = true;
-        public Vector2 startAreaGroundSize = new Vector2(260f, 260f);
-        public float startAreaGroundThickness = 0.6f;
-        public float startAreaGroundSurfaceOffset = -0.02f;
         public bool createChapter01AreaGroundIfNeeded = true;
         public Vector2 chapter01AreaGroundPadding = new Vector2(70f, 55f);
         public float chapter01AreaGroundThickness = 0.6f;
@@ -90,6 +86,11 @@ namespace ZhuozhengYuan
         public string walkableGroundRootName = "WalkableGroundRoot";
         public int totalPages = 5;
         public bool autoPlayIntro = false;
+        public string objectiveGoChapter01Gates = "\u524d\u5f80\u8fdc\u9999\u5802\u533a\u57df\uff0c\u64cd\u63a7\u5de6\u53f3\u6697\u95f8\u3002";
+        public string objectiveGoChapter02Quiz = "\u524d\u5f80\u5c0f\u98de\u8679\u533a\u57df\uff0c\u89e6\u53d1\u7b2c\u4e8c\u7ae0\u7b54\u9898\u6311\u6218\u3002";
+        public string objectiveGoChapter03YuanyangHall = "\u524d\u5f80\u5345\u516d\u9e33\u9e2f\u9986\uff0c\u5b8c\u6210\u5357\u5317\u5385\u56de\u97f3\u7ebf\u7d22\u3002";
+        public string objectiveGoChapter04WithWhomSitPavilion = "\u524d\u5f80\u4e0e\u8c01\u540c\u5750\u8f69\uff0c\u5b8c\u6210\u6700\u540e\u7684\u6e38\u73a9\u3002";
+        public string objectiveProjectCompleted = "\u6e38\u73a9\u5df2\u5b8c\u6210\u3002";
 
         public static GardenGameManager Instance { get; private set; }
 
@@ -103,6 +104,7 @@ namespace ZhuozhengYuan
                     && !_dialogueActive
                     && !_directionChoiceActive
                     && !_chapter02QuizActive
+                    && !_chapter03KnowledgeActive
                     && (chapter01Director == null || !chapter01Director.HasActiveGatePuzzle);
             }
         }
@@ -111,6 +113,7 @@ namespace ZhuozhengYuan
         private bool _dialogueActive;
         private bool _directionChoiceActive;
         private bool _chapter02QuizActive;
+        private bool _chapter03KnowledgeActive;
         private IChapter01RuntimeUIPresenter _chapter01Presenter;
         private IChapter02QuizPresenter _chapter02QuizPresenter;
         private Chapter06Director[] _resolvedChapter06Directors = Array.Empty<Chapter06Director>();
@@ -169,7 +172,6 @@ namespace ZhuozhengYuan
                 introController.PrepareRuntimeSupports();
             }
 
-            EnsureStartAreaGroundIfNeeded();
             EnsureChapter01AreaGroundIfNeeded();
             EnsureChapter01RouteGroundIfNeeded();
             EnsureChapter01RouteGuideIfNeeded();
@@ -226,6 +228,65 @@ namespace ZhuozhengYuan
         public void SetObjective(string objective)
         {
             _chapter01Presenter?.SetObjective(objective);
+        }
+
+        public void RefreshGlobalObjective()
+        {
+            SetObjective(ResolveGlobalObjectiveText(
+                CurrentSaveData,
+                objectiveGoChapter01Gates,
+                objectiveGoChapter02Quiz,
+                objectiveGoChapter03YuanyangHall,
+                objectiveGoChapter04WithWhomSitPavilion,
+                objectiveProjectCompleted));
+        }
+
+        public static string ResolveGlobalObjectiveText(
+            SaveData saveData,
+            string chapter01GateObjective,
+            string chapter02QuizObjective,
+            string chapter03YuanyangHallObjective,
+            string chapter04WithWhomSitObjective,
+            string projectCompletedObjective)
+        {
+            if (saveData == null)
+            {
+                return chapter01GateObjective ?? string.Empty;
+            }
+
+            if (saveData.projectCompleted)
+            {
+                return projectCompletedObjective ?? string.Empty;
+            }
+
+            if (saveData.chapter03PageCollected)
+            {
+                return chapter04WithWhomSitObjective ?? string.Empty;
+            }
+
+            if (saveData.chapter02State == Chapter02State.Completed || saveData.chapter02PageCollected)
+            {
+                return chapter03YuanyangHallObjective ?? string.Empty;
+            }
+
+            if (HasChapter01WaterGateTriggered(saveData))
+            {
+                return chapter02QuizObjective ?? string.Empty;
+            }
+
+            return chapter01GateObjective ?? string.Empty;
+        }
+
+        public static bool HasChapter01WaterGateTriggered(SaveData saveData)
+        {
+            if (saveData == null)
+            {
+                return false;
+            }
+
+            return saveData.chapter01PageCollected
+                || saveData.chapter01State >= Chapter01State.FlowSolved
+                || !string.IsNullOrWhiteSpace(saveData.selectedFlowDirection);
         }
 
         public void SetChapter02Objective(string objective)
@@ -379,6 +440,10 @@ namespace ZhuozhengYuan
             }
 
             NotifyChapter06IntroFinished();
+            if (CurrentSaveData == null || CurrentSaveData.chapter02State != Chapter02State.InProgress)
+            {
+                RefreshGlobalObjective();
+            }
         }
 
         public void SetDialogueActive(bool isActive)
@@ -396,6 +461,12 @@ namespace ZhuozhengYuan
         public void SetChapter02QuizActive(bool isActive)
         {
             _chapter02QuizActive = isActive;
+            RefreshPlayerRuntimeState();
+        }
+
+        public void SetChapter03KnowledgeActive(bool isActive)
+        {
+            _chapter03KnowledgeActive = isActive;
             RefreshPlayerRuntimeState();
         }
 
@@ -440,7 +511,11 @@ namespace ZhuozhengYuan
 
         private void RefreshPlayerRuntimeState()
         {
-            bool gameplayAllowed = !_introActive && !_dialogueActive && !_directionChoiceActive && !_chapter02QuizActive;
+            bool gameplayAllowed = !_introActive
+                && !_dialogueActive
+                && !_directionChoiceActive
+                && !_chapter02QuizActive
+                && !_chapter03KnowledgeActive;
 
             if (playerViewModeController != null)
             {
@@ -634,96 +709,6 @@ namespace ZhuozhengYuan
             }
 
             hiddenCollisionBuilder.EnsureHiddenColliders();
-        }
-
-        private void EnsureStartAreaGroundIfNeeded()
-        {
-            if (!createStartAreaGroundIfNeeded || introController == null || introController.playerPostIntroPose == null)
-            {
-                return;
-            }
-
-            Transform spawnPose = introController.playerPostIntroPose;
-            Transform parent = ResolveWalkableGroundRoot();
-            Transform existingGround = parent != null ? parent.Find("StartAreaHiddenGround") : null;
-            GameObject supportObject = existingGround != null ? existingGround.gameObject : new GameObject("StartAreaHiddenGround");
-
-            if (parent != null && supportObject.transform.parent != parent)
-            {
-                supportObject.transform.SetParent(parent, false);
-            }
-
-            float thickness = Mathf.Max(0.1f, startAreaGroundThickness);
-            float bottomOffset = GetCharacterBottomOffset();
-            float topY = spawnPose.position.y + startAreaGroundSurfaceOffset - bottomOffset;
-            float width = Mathf.Max(2f, startAreaGroundSize.x);
-            float length = Mathf.Max(2f, startAreaGroundSize.y);
-            Vector3 supportCenter = new Vector3(spawnPose.position.x, topY - thickness * 0.5f, spawnPose.position.z);
-
-            if (TryGetGardenModelBounds(out Bounds gardenBounds))
-            {
-                width = Mathf.Max(width, gardenBounds.size.x + 12f);
-                length = Mathf.Max(length, gardenBounds.size.z + 12f);
-                supportCenter = new Vector3(gardenBounds.center.x, topY - thickness * 0.5f, gardenBounds.center.z);
-            }
-
-            supportObject.transform.position = supportCenter;
-
-            BoxCollider collider = supportObject.GetComponent<BoxCollider>();
-            if (collider == null)
-            {
-                collider = supportObject.AddComponent<BoxCollider>();
-            }
-
-            collider.size = new Vector3(width, thickness, length);
-        }
-
-        private bool TryGetGardenModelBounds(out Bounds gardenBounds)
-        {
-            gardenBounds = default;
-
-            Transform gardenRoot = null;
-            if (hiddenCollisionBuilder != null && hiddenCollisionBuilder.targetRoot != null)
-            {
-                gardenRoot = hiddenCollisionBuilder.targetRoot;
-            }
-
-            if (gardenRoot == null)
-            {
-                GameObject gardenObject = GameObject.Find("GardenModel");
-                if (gardenObject != null)
-                {
-                    gardenRoot = gardenObject.transform;
-                }
-            }
-
-            if (gardenRoot == null)
-            {
-                return false;
-            }
-
-            Renderer[] renderers = gardenRoot.GetComponentsInChildren<Renderer>(true);
-            bool hasBounds = false;
-
-            for (int index = 0; index < renderers.Length; index++)
-            {
-                Renderer renderer = renderers[index];
-                if (renderer == null || !renderer.enabled)
-                {
-                    continue;
-                }
-
-                if (!hasBounds)
-                {
-                    gardenBounds = renderer.bounds;
-                    hasBounds = true;
-                    continue;
-                }
-
-                gardenBounds.Encapsulate(renderer.bounds);
-            }
-
-            return hasBounds;
         }
 
         private void EnsureChapter01AreaGroundIfNeeded()

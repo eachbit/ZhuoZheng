@@ -9,6 +9,8 @@ using TMPro;
 /// </summary>
 public class South : MonoBehaviour
 {
+    private const string HintFramePrefix = "Chapter03PlaqueFrame_";
+
     [Header("触发器引用")]
     [Tooltip("寒冷区域触发器对象")]
     public GameObject coldAreaTrigger;
@@ -68,9 +70,166 @@ public class South : MonoBehaviour
     private bool isInColdArea = false;
     private bool isInStoveArea = false;
     private bool isInDeskArea = false;
+    private bool isPresentationUiSuppressed = false;
+    private bool restoreHintAfterVideo = false;
+    private bool restoreHintFrameAfterVideo = false;
+    private bool restoreCultureTipAfterVideo = false;
+    private bool restoreGongcheIconAfterVideo = false;
     
     // 色调过渡相关
     private Coroutine toneTransitionCoroutine;
+
+    void Awake()
+    {
+        SetVideoStandby();
+        SetParticleEffectsStandby();
+    }
+
+    void SetVideoStandby()
+    {
+        if (videoPlayer != null)
+        {
+            videoPlayer.playOnAwake = false;
+            if (videoPlayer.isPlaying)
+            {
+                videoPlayer.Stop();
+            }
+        }
+        if (videoRenderTexture != null)
+        {
+            videoRenderTexture.gameObject.SetActive(false);
+        }
+    }
+
+    void SetParticleEffectsStandby()
+    {
+        SetParticleSystemStandby(fireParticleSystem);
+        SetParticleSystemStandby(steamParticleSystem);
+    }
+
+    void SetParticleSystemStandby(ParticleSystem particleSystem)
+    {
+        if (particleSystem == null)
+        {
+            return;
+        }
+
+        ParticleSystem.MainModule main = particleSystem.main;
+        main.playOnAwake = false;
+        particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+    }
+
+    void SetChapterPresentationVisible(bool isVisible)
+    {
+        Component actualTextComponent = ResolveHintTextComponent();
+        GameObject hintObject = actualTextComponent != null ? actualTextComponent.gameObject : null;
+        GameObject hintFrameObject = FindHintFrameObject(actualTextComponent);
+        GameObject gongcheIconObject = gongcheIconUI != null ? gongcheIconUI.gameObject : null;
+
+        if (!isVisible)
+        {
+            isPresentationUiSuppressed = true;
+            restoreHintAfterVideo = hintObject != null && hintObject.activeSelf;
+            restoreHintFrameAfterVideo = hintFrameObject != null && hintFrameObject.activeSelf;
+            restoreCultureTipAfterVideo = cultureTipPanel != null && cultureTipPanel.activeSelf;
+            restoreGongcheIconAfterVideo = gongcheIconObject != null && gongcheIconObject.activeSelf;
+
+            if (hintFrameObject != null)
+            {
+                hintFrameObject.SetActive(false);
+            }
+
+            if (hintObject != null)
+            {
+                hintObject.SetActive(false);
+            }
+
+            if (cultureTipPanel != null)
+            {
+                cultureTipPanel.SetActive(false);
+            }
+
+            if (gongcheIconObject != null)
+            {
+                gongcheIconObject.SetActive(false);
+            }
+
+            return;
+        }
+
+        isPresentationUiSuppressed = false;
+
+        if (hintObject != null)
+        {
+            hintObject.SetActive(restoreHintAfterVideo);
+        }
+
+        if (hintFrameObject != null)
+        {
+            hintFrameObject.SetActive(restoreHintFrameAfterVideo && hintObject != null && hintObject.activeSelf);
+        }
+
+        if (cultureTipPanel != null)
+        {
+            cultureTipPanel.SetActive(restoreCultureTipAfterVideo);
+        }
+
+        if (gongcheIconObject != null)
+        {
+            gongcheIconObject.SetActive(restoreGongcheIconAfterVideo);
+        }
+    }
+
+    Component ResolveHintTextComponent()
+    {
+        if (hintText == null)
+        {
+            return null;
+        }
+
+        if (hintText is RectTransform rectTransform)
+        {
+            TextMeshProUGUI tmpText = rectTransform.GetComponent<TextMeshProUGUI>();
+            if (tmpText == null)
+            {
+                tmpText = rectTransform.GetComponentInChildren<TextMeshProUGUI>();
+            }
+
+            if (tmpText != null)
+            {
+                hintText = tmpText;
+                return tmpText;
+            }
+
+            Text uiText = rectTransform.GetComponent<Text>();
+            if (uiText == null)
+            {
+                uiText = rectTransform.GetComponentInChildren<Text>();
+            }
+
+            if (uiText != null)
+            {
+                hintText = uiText;
+                return uiText;
+            }
+
+            return null;
+        }
+
+        return hintText;
+    }
+
+    GameObject FindHintFrameObject(Component textComponent)
+    {
+        RectTransform textRect = textComponent != null ? textComponent.GetComponent<RectTransform>() : null;
+        if (textRect == null || textRect.parent == null)
+        {
+            return null;
+        }
+
+        Transform frameTransform = textRect.parent.Find(HintFramePrefix + textComponent.gameObject.name);
+        return frameTransform != null ? frameTransform.gameObject : null;
+    }
     
     void Start()
     {
@@ -100,9 +259,9 @@ public class South : MonoBehaviour
             Debug.Log("📖 自动查找Book模型...");
             gongcheScoreObject = GameObject.Find("Book");
             if (gongcheScoreObject != null)
-                Debug.Log($"✅ 找到Book: {gongcheScoreObject.name}");
+                Debug.Log($"✅ 找到拾取物: {gongcheScoreObject.name}");
             else
-                Debug.LogWarning("⚠️ 未找到Book模型");
+                Debug.LogWarning("⚠️ 未找到工具书拾取物");
         }
         
         // 验证UI引用
@@ -132,7 +291,7 @@ public class South : MonoBehaviour
         if (gongcheScoreObject != null)
         {
             gongcheScoreObject.SetActive(false);
-            Debug.Log($"   ✅ 隐藏工尺谱: {gongcheScoreObject.name}");
+            Debug.Log($"   ✅ 隐藏工具书拾取物: {gongcheScoreObject.name}");
         }
         
         if (gongcheIconUI != null)
@@ -144,6 +303,7 @@ public class South : MonoBehaviour
         if (cultureTipPanel != null)
         {
             cultureTipPanel.SetActive(false);
+            Chapter03PlaqueFrame.ApplySoftPanel(cultureTipPanel);
             Debug.Log($"   ✅ 隐藏文化提示弹窗: {cultureTipPanel.name}");
         }
         else
@@ -151,11 +311,7 @@ public class South : MonoBehaviour
             Debug.LogWarning("   ⚠️ CultureTipPanel为null，无法隐藏");
         }
         
-        if (fireParticleSystem != null)
-            fireParticleSystem.Stop();
-        
-        if (steamParticleSystem != null)
-            steamParticleSystem.Stop();
+        SetParticleEffectsStandby();
         
         // 隐藏视频渲染目标
         if (videoRenderTexture != null)
@@ -621,7 +777,7 @@ public class South : MonoBehaviour
         
         if (isHeatingActivated && !hasPickedUpGongcheScore)
         {
-            UpdateHintText("按 E 拾取昆曲工尺谱");
+            UpdateHintText("按 E 取走工具书");
         }
     }
     
@@ -644,13 +800,13 @@ public class South : MonoBehaviour
         // 播放火焰粒子
         if (fireParticleSystem != null)
         {
-            fireParticleSystem.Play();
+            fireParticleSystem.Play(true);
         }
         
         // 播放热气粒子
         if (steamParticleSystem != null)
         {
-            steamParticleSystem.Play();
+            steamParticleSystem.Play(true);
         }
         
         // 显示交互成功提示
@@ -689,7 +845,7 @@ public class South : MonoBehaviour
         {
             gongcheScoreObject.SetActive(true);
             
-            // 让昆曲工尺谱微微旋转
+            // 让工具书微微旋转
             StartCoroutine(RotateGongcheScore());
         }
         
@@ -697,7 +853,7 @@ public class South : MonoBehaviour
         yield return new WaitForSeconds(3f);
         if (isInDeskArea)
         {
-            UpdateHintText("按 E 拾取昆曲工尺谱");
+            UpdateHintText("按 E 取走工具书");
         }
         else
         {
@@ -721,6 +877,7 @@ public class South : MonoBehaviour
         Debug.Log($"   视频URL: {videoPlayer.url}");
         
         // 如果有渲染目标，显示它
+        SetChapterPresentationVisible(false);
         if (videoRenderTexture != null)
         {
             videoRenderTexture.gameObject.SetActive(true);
@@ -728,6 +885,7 @@ public class South : MonoBehaviour
         }
         
         // 播放视频
+        videoPlayer.playOnAwake = false;
         videoPlayer.Play();
         
         // 等待视频播放完成（8秒或视频实际长度）
@@ -745,6 +903,8 @@ public class South : MonoBehaviour
             videoRenderTexture.gameObject.SetActive(false);
             Debug.Log("✅ 视频渲染目标已隐藏");
         }
+
+        SetChapterPresentationVisible(true);
     }
     
     /// <summary>
@@ -770,7 +930,7 @@ public class South : MonoBehaviour
         {
             gongcheScoreObject.SetActive(true);
             
-            // 让昆曲工尺谱微微旋转
+            // 让工具书微微旋转
             StartCoroutine(RotateGongcheScore());
         }
         
@@ -778,7 +938,7 @@ public class South : MonoBehaviour
         yield return new WaitForSeconds(3f);
         if (isInDeskArea)
         {
-            UpdateHintText("按 E 拾取昆曲工尺谱");
+            UpdateHintText("按 E 取走工具书");
         }
         else
         {
@@ -823,7 +983,7 @@ public class South : MonoBehaviour
         }
         
         // 显示获得提示
-        UpdateHintText("获得昆曲工尺谱，或可用于北厅。");
+        UpdateHintText("获得工具书，可前往北厅试回音。");
         
         // 3秒后清除提示
         StartCoroutine(ClearHintAfterDelay(3f));
@@ -899,7 +1059,7 @@ public class South : MonoBehaviour
             yield return null;
         }
     }
-    
+
     /// <summary>
     /// 色调过渡
     /// </summary>
@@ -1057,8 +1217,9 @@ public class South : MonoBehaviour
                 tmpText.fontSize = 36;
             }
             
-            bool shouldShow = forceShow || !string.IsNullOrEmpty(text);
+            bool shouldShow = !isPresentationUiSuppressed && (forceShow || !string.IsNullOrEmpty(text));
             hintObj.SetActive(shouldShow);
+            Chapter03PlaqueFrame.ApplyHintFrame(actualTextComponent, shouldShow);
             
             Debug.Log($"   → Active状态: {shouldShow}");
             Debug.Log($"   → 对象实际Active: {hintObj.activeSelf}");
@@ -1123,8 +1284,9 @@ public class South : MonoBehaviour
                 uiText.fontSize = 36;
             }
             
-            bool shouldShow = forceShow || !string.IsNullOrEmpty(text);
+            bool shouldShow = !isPresentationUiSuppressed && (forceShow || !string.IsNullOrEmpty(text));
             hintObj.SetActive(shouldShow);
+            Chapter03PlaqueFrame.ApplyHintFrame(actualTextComponent, shouldShow);
             
             Debug.Log($"   → Active状态: {shouldShow}");
             Debug.Log($"   → 对象实际Active: {hintObj.activeSelf}");
@@ -1146,6 +1308,11 @@ public class South : MonoBehaviour
     /// </summary>
     void ShowCultureTip()
     {
+        if (isPresentationUiSuppressed)
+        {
+            return;
+        }
+
         if (cultureTipPanel != null)
         {
             cultureTipPanel.SetActive(true);

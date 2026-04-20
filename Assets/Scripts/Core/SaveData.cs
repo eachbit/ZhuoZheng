@@ -17,6 +17,7 @@ namespace ZhuozhengYuan
         public int chapter02AnsweredCorrectCount;
         public string[] chapter02QuestionOrder = Array.Empty<string>();
         public bool chapter02PageCollected;
+        public bool chapter03PageCollected;
         public Chapter06State chapter06State = Chapter06State.NotStarted;
         public int chapter06AnsweredCorrectCount;
         public string[] chapter06QuestionOrder = Array.Empty<string>();
@@ -40,6 +41,7 @@ namespace ZhuozhengYuan
                 chapter02AnsweredCorrectCount = 0,
                 chapter02QuestionOrder = Array.Empty<string>(),
                 chapter02PageCollected = false,
+                chapter03PageCollected = false,
                 chapter06State = Chapter06State.NotStarted,
                 chapter06AnsweredCorrectCount = 0,
                 chapter06QuestionOrder = Array.Empty<string>(),

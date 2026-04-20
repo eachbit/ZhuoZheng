@@ -1,8 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using ZhuozhengYuan;
 
 /// <summary>
 /// 北厅传音交互系统 - 卅六鸳鸯馆工尺谱传音机制
@@ -41,6 +43,9 @@ public class North : MonoBehaviour
     
     [Tooltip("文化提示弹窗")]
     public GameObject cultureTipPanel;
+
+    [Tooltip("拾取第三章残页后展示的昆曲传音知识面板；为空时运行时自动创建。")]
+    public Chapter03KnowledgePanel chapter03KnowledgePanel;
     
     [Tooltip("工尺谱图标UI（复用南厅已获取的图标）")]
     public Image gongcheIconUI;
@@ -61,6 +66,18 @@ public class North : MonoBehaviour
     [Tooltip("残页飞行高度（抛物线）")]
     public float returningPageFlyHeight = 2f;
 
+    [Tooltip("残页出现后，玩家靠近到这个距离内即可按 E 拾取")]
+    public float returningPagePickupDistance = 3f;
+
+    [Header("Scholar Route Guide")]
+    [Tooltip("Optional target used by the guide after the Chapter 3 page is collected. If empty, the scene object named shusheng is used.")]
+    public Transform scholarGuideTargetOverride;
+    public string scholarRouteGuideObjectName = "Chapter03ToScholarRouteGuide";
+    public string scholarRouteGuideRootName = "chapter03ToScholarGuidePath";
+    public float scholarRouteGuideReachedRadius = 4f;
+    public int scholarRouteGuideMaxDecorations = 6;
+    public int scholarRouteGuideAutoPointCount = 5;
+
     [Header("状态管理")]
     [Tooltip("是否已获得工尺谱（从南厅同步）")]
     [SerializeField]
@@ -74,6 +91,16 @@ public class North : MonoBehaviour
     
     [Tooltip("交互是否已完成")]
     private bool isInteractionCompleted = false;
+
+    [Tooltip("残页是否已经显现，等待玩家拾取")]
+    private bool isReturningPageAvailable = false;
+
+    [Tooltip("第三章残页是否已经拾取")]
+    private bool hasCollectedReturningPage = false;
+
+    private Vector3 returningPageInitialPosition;
+    private Quaternion returningPageInitialRotation;
+    private Transform scholarRouteGuideRoot;
 
     void Start()
     {
@@ -121,6 +148,8 @@ public class North : MonoBehaviour
                 Debug.LogWarning("⚠️ 未找到Book模型");
         }
         
+        SyncSavedState();
+
         // 验证UI引用
         Debug.Log("🎨 开始验证UI引用...");
         ValidateUIReferences();
@@ -143,12 +172,16 @@ public class North : MonoBehaviour
         if (cultureTipPanel != null)
         {
             cultureTipPanel.SetActive(false);
+            Chapter03PlaqueFrame.ApplySoftPanel(cultureTipPanel);
             Debug.Log($"   ✅ 隐藏文化提示弹窗: {cultureTipPanel.name}");
         }
         
         if (returningPage != null)
         {
+            returningPageInitialPosition = returningPage.transform.position;
+            returningPageInitialRotation = returningPage.transform.rotation;
             returningPage.SetActive(false);
+            EnsureReturningPageVisual();
             Debug.Log($"   ✅ 隐藏残页对象: {returningPage.name}");
         }
         
@@ -207,7 +240,7 @@ public class North : MonoBehaviour
         
         isPlayerInTrigger = true;
         
-        if (isInteractionCompleted)
+        if (isInteractionCompleted && !isReturningPageAvailable)
             return;
         
         // 显示初始提示
@@ -232,32 +265,57 @@ public class North : MonoBehaviour
     /// </summary>
     void ShowInitialHint()
     {
+        if (isReturningPageAvailable && !hasCollectedReturningPage)
+        {
+            UpdateHintText("回音既定，按 E 拾取《长物志》残页。");
+            return;
+        }
+
         UpdateHintText("此乃拍曲之地，站此可传音");
     }
 
     void Update()
     {
-        // 检测E键交互 - 只要交互没完成，就可以按E开始交互
-        if (!isInteractionCompleted && Input.GetKeyDown(KeyCode.E))
+        if (!Input.GetKeyDown(KeyCode.E))
         {
-            // 如果交互正在进行中，忽略按键
-            if (isInteractionActive)
-            {
-                Debug.Log($"⚠️ 交互正在进行中，忽略E键");
-                return;
-            }
-            
-            Debug.Log($"⌨️ North开始E键交互 | hasGongcheScore: {hasGongcheScore} | isPlayerInTrigger: {isPlayerInTrigger}");
-            
-            // 检查是否在触发器内
-            if (!isPlayerInTrigger)
-            {
-                return;
-            }
-            
-            isInteractionActive = true;
-            StartCoroutine(StartSoundWaveInteraction());
+            return;
         }
+
+        if (isReturningPageAvailable && !hasCollectedReturningPage)
+        {
+            if (CanPickUpReturningPage())
+            {
+                PickUpReturningPage();
+            }
+            else
+            {
+                UpdateHintText("靠近残页后，按 E 拾取《长物志》残页。");
+            }
+            return;
+        }
+
+        if (!isPlayerInTrigger)
+        {
+            return;
+        }
+
+        // 检测E键交互 - 只要交互没完成，就可以按E开始交互
+        if (isInteractionCompleted)
+        {
+            return;
+        }
+
+        // 如果交互正在进行中，忽略按键
+        if (isInteractionActive)
+        {
+            Debug.Log($"⚠️ 交互正在进行中，忽略E键");
+            return;
+        }
+
+        Debug.Log($"⌨️ North开始E键交互 | hasGongcheScore: {hasGongcheScore} | isPlayerInTrigger: {isPlayerInTrigger}");
+
+        isInteractionActive = true;
+        StartCoroutine(StartSoundWaveInteraction());
     }
 
     /// <summary>
@@ -335,30 +393,19 @@ public class North : MonoBehaviour
         
         // 步骤⑥：残页飞回北厅
         Debug.Log("📜 残页开始飞回...");
-        if (returningPage != null && playerObject != null)
-        {
-            returningPage.SetActive(true);
-            yield return StartCoroutine(FlyReturningPageToPlayer());
-        }
-        
-        // 步骤⑦：显示获得提示
-        UpdateHintText("获得《长物志》残页。");
-        Debug.Log("✅ 获得残页");
-        
-        // 等待提示显示
-        yield return new WaitForSeconds(1.5f);
-        
-        // 步骤⑧：完成提示
-        UpdateHintText("获得《长物志》残页。双厅协作，声传千里。");
+        RevealReturningPage();
+        UpdateHintText("回音已定，残页显现。按 E 拾取《长物志》残页。");
         isInteractionCompleted = true;
-        
-        // 等待提示显示
-        yield return new WaitForSeconds(3f);
-        UpdateHintText("");
+        isInteractionActive = false;
         
         // 停止粒子
         if (soundWaveParticles != null)
             soundWaveParticles.Stop();
+
+        if (gongcheScrollObject != null)
+        {
+            gongcheScrollObject.SetActive(false);
+        }
         
         Debug.Log("✅ 北厅传音交互完成");
     }
@@ -400,6 +447,120 @@ public class North : MonoBehaviour
         Debug.Log("  ✅ 残页已到达玩家位置");
     }
 
+    void RevealReturningPage()
+    {
+        if (returningPage == null || hasCollectedReturningPage)
+        {
+            isReturningPageAvailable = false;
+            return;
+        }
+
+        returningPage.transform.position = returningPageInitialPosition;
+        returningPage.transform.rotation = returningPageInitialRotation;
+        returningPage.SetActive(true);
+        EnsureReturningPageVisual();
+        isReturningPageAvailable = true;
+    }
+
+    void PickUpReturningPage()
+    {
+        if (returningPage == null || hasCollectedReturningPage || isInteractionActive)
+        {
+            return;
+        }
+
+        isInteractionActive = true;
+        hasCollectedReturningPage = true;
+        isReturningPageAvailable = false;
+        StartCoroutine(CollectReturningPageRoutine());
+    }
+
+    bool CanPickUpReturningPage()
+    {
+        if (returningPage == null)
+        {
+            return false;
+        }
+
+        GameObject player = playerObject;
+        if (player == null)
+        {
+            player = GameObject.FindGameObjectWithTag("Player");
+        }
+        if (player == null)
+        {
+            player = GameObject.Find("Player");
+        }
+        if (player == null)
+        {
+            return isPlayerInTrigger;
+        }
+
+        float distance = Vector3.Distance(player.transform.position, returningPage.transform.position);
+        return isPlayerInTrigger || distance <= Mathf.Max(0.5f, returningPagePickupDistance);
+    }
+
+    IEnumerator CollectReturningPageRoutine()
+    {
+        bool awarded = false;
+        GardenGameManager manager = GardenGameManager.Instance;
+        if (manager != null && manager.CurrentSaveData != null)
+        {
+            awarded = TryAwardChapter03Page(manager.CurrentSaveData, manager.totalPages);
+            if (awarded)
+            {
+                manager.RefreshCollectedPagesDisplay();
+                manager.ShowPageReward("残页 +1", "获得《长物志》残页。", 3.8f);
+                manager.SaveProgress();
+                manager.RefreshGlobalObjective();
+            }
+        }
+
+        yield return StartCoroutine(FlyReturningPageToPlayer());
+
+        if (returningPage != null)
+        {
+            returningPage.SetActive(false);
+        }
+
+        if (awarded)
+        {
+            yield return StartCoroutine(ShowKnowledgePanelAfterPickup(manager));
+            ShowScholarRouteGuide(ResolveScholarGuideStartPosition());
+        }
+
+        UpdateHintText(awarded
+            ? "获得《长物志》残页。双厅协作，声传千里。"
+            : "残页已收好，继续前行。");
+        yield return new WaitForSeconds(3f);
+        UpdateHintText("");
+        isInteractionActive = false;
+    }
+
+    IEnumerator ShowKnowledgePanelAfterPickup(GardenGameManager manager)
+    {
+        bool panelClosed = false;
+
+        if (chapter03KnowledgePanel == null)
+        {
+            chapter03KnowledgePanel = FindObjectOfType<Chapter03KnowledgePanel>(true);
+        }
+
+        if (chapter03KnowledgePanel == null)
+        {
+            chapter03KnowledgePanel = Chapter03KnowledgePanel.ShowOrCreate(manager, () => panelClosed = true);
+        }
+        else
+        {
+            chapter03KnowledgePanel.Show(manager, () => panelClosed = true);
+        }
+
+        while (chapter03KnowledgePanel != null && chapter03KnowledgePanel.IsOpen && !panelClosed)
+        {
+            yield return null;
+        }
+    }
+
     /// <summary>
     /// 工尺谱从玩家身上飞起并悬浮的动画
     /// </summary>
@@ -436,6 +597,294 @@ public class North : MonoBehaviour
         // 确保到达目标位置
         gongcheScrollObject.transform.position = endPos;
         Debug.Log("  ✅ 工尺谱已悬浮在玩家面前");
+    }
+
+    void SyncSavedState()
+    {
+        hasGongcheScore = hasGongcheScore || PlayerPrefs.GetInt("HasGongcheScore", 0) == 1;
+
+        GardenGameManager manager = GardenGameManager.Instance;
+        if (manager == null || manager.CurrentSaveData == null)
+        {
+            return;
+        }
+
+        if (manager.CurrentSaveData.chapter03PageCollected)
+        {
+            hasCollectedReturningPage = true;
+            isReturningPageAvailable = false;
+            isInteractionCompleted = true;
+            if (returningPage != null)
+            {
+                returningPage.SetActive(false);
+            }
+
+            if (!manager.CurrentSaveData.projectCompleted)
+            {
+                ShowScholarRouteGuide(ResolveScholarGuideStartPosition());
+            }
+        }
+    }
+
+    void EnsureReturningPageVisual()
+    {
+        if (returningPage == null)
+        {
+            return;
+        }
+
+        Chapter01PageVisualEnhancer visualEnhancer = returningPage.GetComponent<Chapter01PageVisualEnhancer>();
+        if (visualEnhancer == null)
+        {
+            visualEnhancer = returningPage.AddComponent<Chapter01PageVisualEnhancer>();
+        }
+
+        visualEnhancer.hideLegacyRenderer = true;
+        visualEnhancer.visualLocalOffset = new Vector3(0f, 0.12f, 0f);
+        visualEnhancer.visualLocalEuler = new Vector3(84f, 12f, -10f);
+        visualEnhancer.visualScale = 0.58f;
+        visualEnhancer.bobAmplitude = 0.02f;
+        visualEnhancer.rotationSpeed = 16f;
+        visualEnhancer.swayAngle = 6f;
+        visualEnhancer.EnsureVisual();
+        visualEnhancer.SetVisible(returningPage.activeSelf);
+    }
+
+    public static bool TryResolveScholarGuideTarget(Transform explicitTarget, out Vector3 targetPosition)
+    {
+        if (explicitTarget != null)
+        {
+            targetPosition = explicitTarget.position;
+            return true;
+        }
+
+        Transform foundTarget = FindScholarTransformInScene();
+        if (foundTarget != null)
+        {
+            targetPosition = foundTarget.position;
+            return true;
+        }
+
+        targetPosition = Vector3.zero;
+        return false;
+    }
+
+    void ShowScholarRouteGuide(Vector3 startPosition)
+    {
+        if (!TryResolveScholarGuideTarget(scholarGuideTargetOverride, out Vector3 targetPosition))
+        {
+            Debug.LogWarning("North could not create the scholar guide because no shusheng target was found.");
+            return;
+        }
+
+        DestroyScholarRouteGuide();
+
+        GameObject routeGuideObject = new GameObject(string.IsNullOrWhiteSpace(scholarRouteGuideObjectName)
+            ? "Chapter03ToScholarRouteGuide"
+            : scholarRouteGuideObjectName);
+        scholarRouteGuideRoot = routeGuideObject.transform;
+        scholarRouteGuideRoot.SetParent(transform, false);
+
+        Transform startMarker = CreateRouteGuideMarker("Chapter03PageCollectedStart", scholarRouteGuideRoot, startPosition);
+        Transform targetMarker = CreateRouteGuideMarker("ScholarTarget", scholarRouteGuideRoot, targetPosition);
+        Transform[] routeMarkers = ResolveScholarRouteMarkers(startPosition, targetPosition, scholarRouteGuideRoot);
+
+        Chapter01AuthoredRouteGuide routeGuide = routeGuideObject.AddComponent<Chapter01AuthoredRouteGuide>();
+        routeGuide.manager = GardenGameManager.Instance;
+        routeGuide.director = null;
+        routeGuide.introController = null;
+        routeGuide.playerStartPose = startMarker;
+        routeGuide.targetGate = targetMarker;
+        routeGuide.authoredRouteRootName = scholarRouteGuideRootName;
+        routeGuide.routePoints = routeMarkers;
+        routeGuide.showGuideOnStart = true;
+        routeGuide.useResolvedRouteFallback = false;
+        routeGuide.smoothControlPoints = true;
+        routeGuide.reachedRadius = Mathf.Max(1.5f, scholarRouteGuideReachedRadius);
+        routeGuide.maxDecorationMarkers = Mathf.Max(1, scholarRouteGuideMaxDecorations);
+        routeGuide.RebuildGuide();
+    }
+
+    Transform[] ResolveScholarRouteMarkers(Vector3 startPosition, Vector3 targetPosition, Transform fallbackParent)
+    {
+        Transform authoredRoot = FindScholarRouteRoot();
+        if (authoredRoot != null)
+        {
+            Transform[] authoredMarkers = new Transform[authoredRoot.childCount];
+            for (int index = 0; index < authoredRoot.childCount; index++)
+            {
+                authoredMarkers[index] = authoredRoot.GetChild(index);
+            }
+
+            Array.Sort(authoredMarkers, (left, right) => string.CompareOrdinal(left.name, right.name));
+            if (authoredMarkers.Length > 0)
+            {
+                return authoredMarkers;
+            }
+        }
+
+        Transform generatedPointRoot = fallbackParent;
+        if (fallbackParent != null && !string.IsNullOrWhiteSpace(scholarRouteGuideRootName))
+        {
+            GameObject pointRootObject = new GameObject(scholarRouteGuideRootName);
+            generatedPointRoot = pointRootObject.transform;
+            generatedPointRoot.SetParent(fallbackParent, false);
+        }
+
+        return CreateScholarFallbackRouteMarkers(startPosition, targetPosition, generatedPointRoot);
+    }
+
+    Transform[] CreateScholarFallbackRouteMarkers(Vector3 startPosition, Vector3 targetPosition, Transform fallbackParent)
+    {
+        int pointCount = Mathf.Max(5, scholarRouteGuideAutoPointCount);
+        Transform[] markers = new Transform[pointCount];
+        Vector3 flatDelta = targetPosition - startPosition;
+        flatDelta.y = 0f;
+
+        Vector3 forward = flatDelta.sqrMagnitude > 0.01f
+            ? flatDelta.normalized
+            : Vector3.forward;
+        Vector3 side = Vector3.Cross(Vector3.up, forward);
+        if (side.sqrMagnitude < 0.001f)
+        {
+            side = Vector3.right;
+        }
+        side.Normalize();
+
+        float routeLength = flatDelta.magnitude;
+        float bendOffset = Mathf.Clamp(routeLength * 0.18f, 2.6f, 12f);
+        float[] bendSigns = { -1f, -0.9f, -0.2f, 0.75f, 1f };
+
+        for (int index = 0; index < pointCount; index++)
+        {
+            float t = (index + 1f) / (pointCount + 1f);
+            float centeredT = (t - 0.5f) * 2f;
+            float offsetStrength = 0.55f + (1f - Mathf.Abs(centeredT)) * 0.45f;
+            float sign = bendSigns[Mathf.Min(index, bendSigns.Length - 1)];
+            Vector3 markerPosition = Vector3.Lerp(startPosition, targetPosition, t) + side * sign * bendOffset * offsetStrength;
+            markers[index] = CreateRouteGuideMarker("ScholarRoutePoint_" + index.ToString("00"), fallbackParent, markerPosition);
+        }
+
+        return markers;
+    }
+
+    Transform FindScholarRouteRoot()
+    {
+        if (string.IsNullOrWhiteSpace(scholarRouteGuideRootName))
+        {
+            return null;
+        }
+
+        Transform localRoot = transform.Find(scholarRouteGuideRootName);
+        if (localRoot != null)
+        {
+            return localRoot;
+        }
+
+        GameObject rootObject = GameObject.Find(scholarRouteGuideRootName);
+        return rootObject != null ? rootObject.transform : null;
+    }
+
+    Vector3 ResolveScholarGuideStartPosition()
+    {
+        if (playerObject != null)
+        {
+            return playerObject.transform.position;
+        }
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            return player.transform.position;
+        }
+
+        player = GameObject.Find("Player");
+        if (player != null)
+        {
+            return player.transform.position;
+        }
+
+        return transform.position;
+    }
+
+    static Transform FindScholarTransformInScene()
+    {
+        GameObject activeScholar = GameObject.Find("shusheng");
+        if (activeScholar != null)
+        {
+            return activeScholar.transform;
+        }
+
+        activeScholar = GameObject.Find("\u4e66\u751f");
+        if (activeScholar != null)
+        {
+            return activeScholar.transform;
+        }
+
+        Transform[] transforms = FindObjectsOfType<Transform>(true);
+        for (int index = 0; index < transforms.Length; index++)
+        {
+            Transform candidate = transforms[index];
+            if (candidate != null
+                && (string.Equals(candidate.name, "shusheng", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(candidate.name, "\u4e66\u751f", StringComparison.Ordinal)))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    static Transform CreateRouteGuideMarker(string markerName, Transform parent, Vector3 position)
+    {
+        GameObject markerObject = new GameObject(markerName);
+        Transform marker = markerObject.transform;
+        marker.SetParent(parent, false);
+        marker.position = position;
+        return marker;
+    }
+
+    void DestroyScholarRouteGuide()
+    {
+        if (scholarRouteGuideRoot == null)
+        {
+            Transform existingRoot = transform.Find(string.IsNullOrWhiteSpace(scholarRouteGuideObjectName)
+                ? "Chapter03ToScholarRouteGuide"
+                : scholarRouteGuideObjectName);
+            if (existingRoot != null)
+            {
+                scholarRouteGuideRoot = existingRoot;
+            }
+        }
+
+        if (scholarRouteGuideRoot == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(scholarRouteGuideRoot.gameObject);
+        }
+        else
+        {
+            DestroyImmediate(scholarRouteGuideRoot.gameObject);
+        }
+
+        scholarRouteGuideRoot = null;
+    }
+
+    private static bool TryAwardChapter03Page(SaveData saveData, int totalPages)
+    {
+        if (saveData == null || saveData.chapter03PageCollected)
+        {
+            return false;
+        }
+
+        saveData.chapter03PageCollected = true;
+        saveData.collectedPages = Mathf.Clamp(saveData.collectedPages + 1, 0, Mathf.Max(1, totalPages));
+        return true;
     }
 
     /// <summary>
@@ -552,6 +1001,7 @@ public class North : MonoBehaviour
             
             bool shouldShow = !string.IsNullOrEmpty(text);
             hintObj.SetActive(shouldShow);
+            Chapter03PlaqueFrame.ApplyHintFrame(actualTextComponent, shouldShow);
             
             Debug.Log($"   → Active状态: {shouldShow}");
             Debug.Log($"   → 对象实际Active: {hintObj.activeSelf}");
@@ -605,6 +1055,7 @@ public class North : MonoBehaviour
             
             bool shouldShow = !string.IsNullOrEmpty(text);
             hintObj.SetActive(shouldShow);
+            Chapter03PlaqueFrame.ApplyHintFrame(actualTextComponent, shouldShow);
             
             Debug.Log($"   → Active状态: {shouldShow}");
             Debug.Log($"   → 对象实际Active: {hintObj.activeSelf}");
