@@ -70,6 +70,39 @@ namespace ZhuozhengYuan.Tests.EditMode
         }
 
         [Test]
+        public void GlobalObjective_ShouldGuideToJianshanLouWhenFourPagesCollected()
+        {
+            Type managerType = Type.GetType("ZhuozhengYuan.GardenGameManager, Assembly-CSharp");
+            Type saveDataType = Type.GetType("ZhuozhengYuan.SaveData, Assembly-CSharp");
+            Assert.IsNotNull(managerType, "GardenGameManager was not found.");
+            Assert.IsNotNull(saveDataType, "SaveData was not found.");
+
+            object saveData = Activator.CreateInstance(saveDataType);
+            SetField(saveData, "chapter03PageCollected", true);
+            SetField(saveData, "chapter04PageCollected", true);
+            SetField(saveData, "collectedPages", 4);
+
+            Assert.AreEqual("jianshan-lou", InvokeResolveGlobalObjectiveText(managerType, saveData));
+        }
+
+        [Test]
+        public void GlobalObjective_ShouldGuideToXuexiangYunweiWhenFivePagesCollected()
+        {
+            Type managerType = Type.GetType("ZhuozhengYuan.GardenGameManager, Assembly-CSharp");
+            Type saveDataType = Type.GetType("ZhuozhengYuan.SaveData, Assembly-CSharp");
+            Assert.IsNotNull(managerType, "GardenGameManager was not found.");
+            Assert.IsNotNull(saveDataType, "SaveData was not found.");
+
+            object saveData = Activator.CreateInstance(saveDataType);
+            SetField(saveData, "chapter03PageCollected", true);
+            SetField(saveData, "chapter04PageCollected", true);
+            SetField(saveData, "chapter05PageCollected", true);
+            SetField(saveData, "collectedPages", 5);
+
+            Assert.AreEqual("xuexiang-yunwei", InvokeResolveGlobalObjectiveText(managerType, saveData));
+        }
+
+        [Test]
         public void ReachTriggerObjective_ShouldStayHiddenBeforeBothGatesAndFlowInteraction()
         {
             Type directorType = Type.GetType("ZhuozhengYuan.Chapter02Director, Assembly-CSharp");
@@ -228,6 +261,8 @@ namespace ZhuozhengYuan.Tests.EditMode
                 "xiao-feihong",
                 "yuanyang-hall",
                 "with-whom-sit",
+                "jianshan-lou",
+                "xuexiang-yunwei",
                 "project-completed"
             });
         }

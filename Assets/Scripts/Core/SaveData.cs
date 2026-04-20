@@ -24,6 +24,7 @@ namespace ZhuozhengYuan
         public bool chapter06FinaleViewed;
         public bool projectCompleted;
         public bool chapter04PageCollected;
+        public bool chapter05PageCollected;
 
         public static SaveData CreateDefault()
         {
@@ -47,7 +48,8 @@ namespace ZhuozhengYuan
                 chapter06QuestionOrder = Array.Empty<string>(),
                 chapter06FinaleViewed = false,
                 projectCompleted = false,
-                chapter04PageCollected = false
+                chapter04PageCollected = false,
+                chapter05PageCollected = false
             };
         }
     }

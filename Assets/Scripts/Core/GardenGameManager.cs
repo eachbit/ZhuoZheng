@@ -90,6 +90,8 @@ namespace ZhuozhengYuan
         public string objectiveGoChapter02Quiz = "\u524d\u5f80\u5c0f\u98de\u8679\u533a\u57df\uff0c\u89e6\u53d1\u7b2c\u4e8c\u7ae0\u7b54\u9898\u6311\u6218\u3002";
         public string objectiveGoChapter03YuanyangHall = "\u524d\u5f80\u5345\u516d\u9e33\u9e2f\u9986\uff0c\u5b8c\u6210\u5357\u5317\u5385\u56de\u97f3\u7ebf\u7d22\u3002";
         public string objectiveGoChapter04WithWhomSitPavilion = "\u524d\u5f80\u4e0e\u8c01\u540c\u5750\u8f69\uff0c\u5b8c\u6210\u6700\u540e\u7684\u6e38\u73a9\u3002";
+        public string objectiveGoChapter05JianshanLou = "\u524d\u5f80\u89c1\u5c71\u697c\u6e38\u73a9\u3002";
+        public string objectiveGoChapter06XuexiangYunweiPavilion = "\u524d\u5f80\u96ea\u9999\u4e91\u851a\u4ead\u8fdb\u884c\u6700\u540e\u7684\u6e38\u73a9";
         public string objectiveProjectCompleted = "\u6e38\u73a9\u5df2\u5b8c\u6210\u3002";
 
         public static GardenGameManager Instance { get; private set; }
@@ -238,6 +240,8 @@ namespace ZhuozhengYuan
                 objectiveGoChapter02Quiz,
                 objectiveGoChapter03YuanyangHall,
                 objectiveGoChapter04WithWhomSitPavilion,
+                objectiveGoChapter05JianshanLou,
+                objectiveGoChapter06XuexiangYunweiPavilion,
                 objectiveProjectCompleted));
         }
 
@@ -247,6 +251,8 @@ namespace ZhuozhengYuan
             string chapter02QuizObjective,
             string chapter03YuanyangHallObjective,
             string chapter04WithWhomSitObjective,
+            string chapter05JianshanLouObjective,
+            string chapter06XuexiangYunweiObjective,
             string projectCompletedObjective)
         {
             if (saveData == null)
@@ -257,6 +263,16 @@ namespace ZhuozhengYuan
             if (saveData.projectCompleted)
             {
                 return projectCompletedObjective ?? string.Empty;
+            }
+
+            if (saveData.collectedPages >= 5 || saveData.chapter05PageCollected)
+            {
+                return chapter06XuexiangYunweiObjective ?? string.Empty;
+            }
+
+            if (saveData.collectedPages >= 4 || saveData.chapter04PageCollected)
+            {
+                return chapter05JianshanLouObjective ?? string.Empty;
             }
 
             if (saveData.chapter03PageCollected)

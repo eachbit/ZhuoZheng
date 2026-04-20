@@ -683,7 +683,7 @@ public class North : MonoBehaviour
             ? "Chapter03ToScholarRouteGuide"
             : scholarRouteGuideObjectName);
         scholarRouteGuideRoot = routeGuideObject.transform;
-        scholarRouteGuideRoot.SetParent(transform, false);
+        scholarRouteGuideRoot.SetParent(ResolveScholarRouteGuideParent(), false);
 
         Transform startMarker = CreateRouteGuideMarker("Chapter03PageCollectedStart", scholarRouteGuideRoot, startPosition);
         Transform targetMarker = CreateRouteGuideMarker("ScholarTarget", scholarRouteGuideRoot, targetPosition);
@@ -785,6 +785,12 @@ public class North : MonoBehaviour
         return rootObject != null ? rootObject.transform : null;
     }
 
+    Transform ResolveScholarRouteGuideParent()
+    {
+        Transform authoredRoot = FindScholarRouteRoot();
+        return authoredRoot != null ? authoredRoot.parent : null;
+    }
+
     Vector3 ResolveScholarGuideStartPosition()
     {
         if (playerObject != null)
@@ -855,6 +861,17 @@ public class North : MonoBehaviour
             if (existingRoot != null)
             {
                 scholarRouteGuideRoot = existingRoot;
+            }
+        }
+
+        if (scholarRouteGuideRoot == null)
+        {
+            GameObject existingObject = GameObject.Find(string.IsNullOrWhiteSpace(scholarRouteGuideObjectName)
+                ? "Chapter03ToScholarRouteGuide"
+                : scholarRouteGuideObjectName);
+            if (existingObject != null)
+            {
+                scholarRouteGuideRoot = existingObject.transform;
             }
         }
 

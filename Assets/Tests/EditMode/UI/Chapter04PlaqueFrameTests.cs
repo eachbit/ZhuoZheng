@@ -163,6 +163,53 @@ namespace ZhuozhengYuan.Tests.EditMode
             Assert.AreEqual(true, GetField(saveData, "chapter04PageCollected"));
         }
 
+        [Test]
+        public void ShowChapter05RouteGuide_ShouldUseChapter01WorldSpaceVisualStyle()
+        {
+            Type chatType = Type.GetType("Chat, Assembly-CSharp");
+            Assert.IsNotNull(chatType, "Chat was not found.");
+
+            GameObject chatObject = new GameObject("Chat");
+            GameObject scholar = new GameObject("shusheng");
+            GameObject target = new GameObject("westTrigger");
+            Transform guideRoot = null;
+
+            try
+            {
+                object chat = chatObject.AddComponent(chatType);
+                scholar.transform.position = new Vector3(-45f, 1f, -35f);
+                target.transform.position = new Vector3(-141.5f, 3.2f, -119.8f);
+
+                SetField(chat, "chapter05GuideTargetOverride", target.transform);
+                SetField(chat, "chapter05RouteGuideAutoPointCount", 5);
+
+                MethodInfo method = chatType.GetMethod("ShowChapter05RouteGuide", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsNotNull(method, "Chat should create the post-Chapter-4 route guide.");
+                method.Invoke(chat, new object[] { scholar.transform.position });
+
+                guideRoot = GameObject.Find("Chapter04ToChapter05RouteGuide")?.transform;
+                Assert.IsNotNull(guideRoot, "The Chapter 05 route guide root should be created.");
+                Assert.IsNull(guideRoot.parent, "The Chapter 05 route guide should live in world space.");
+
+                Transform runtimeRoot = guideRoot.Find("Chapter01AuthoredGuideRoot");
+                Assert.IsNotNull(runtimeRoot, "The Chapter 05 route should reuse Chapter01AuthoredRouteGuide visuals.");
+                Assert.IsNotNull(runtimeRoot.Find("DecorationsRoot"), "Chapter 1 style decorations should be present.");
+                Assert.IsNotNull(runtimeRoot.Find("DestinationMarkerRoot"), "Chapter 1 style destination marker should be present.");
+                Assert.IsNotNull(runtimeRoot.Find("GuideSegment_00"), "The guide should create visible Chapter 1 ribbon segments.");
+            }
+            finally
+            {
+                if (guideRoot != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(guideRoot.gameObject);
+                }
+
+                UnityEngine.Object.DestroyImmediate(target);
+                UnityEngine.Object.DestroyImmediate(scholar);
+                UnityEngine.Object.DestroyImmediate(chatObject);
+            }
+        }
+
         private static GameObject CreateUiObject(string name)
         {
             return new GameObject(name, typeof(RectTransform), typeof(Image));

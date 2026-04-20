@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -28,6 +29,15 @@ public class Chat : MonoBehaviour
     public TMP_FontAsset chineseFontAsset; // 中文字体Asset（可选）
     
     // 状态变量
+    [Header("Chapter 05 Route Guide")]
+    [Tooltip("Optional target used by the guide after the Chapter 04 page is collected. If empty, the scene object named westTrigger is used.")]
+    public Transform chapter05GuideTargetOverride;
+    public string chapter05RouteGuideObjectName = "Chapter04ToChapter05RouteGuide";
+    public string chapter05RouteGuideRootName = "chapter04ToChapter05GuidePath";
+    public float chapter05RouteGuideReachedRadius = 4f;
+    public int chapter05RouteGuideMaxDecorations = 6;
+    public int chapter05RouteGuideAutoPointCount = 5;
+
     private int currentStage = -1;
     private int currentLineIndex = 0;
     private bool isTyping = false;
@@ -35,6 +45,9 @@ public class Chat : MonoBehaviour
     private Coroutine typingCoroutine; // 打字协程
     
     // 对话数据结构
+    private Transform chapter05RouteGuideRoot;
+    private bool hasShownChapter05RouteGuide;
+
     private DialogueStage[] stages;
     
     void Start()
@@ -932,6 +945,7 @@ public class Chat : MonoBehaviour
     {
         HideAllPanels();
         currentStage = -1;
+        TryShowChapter05RouteGuideAfterPageCollected();
         
         // 恢复光标锁定（回到游戏模式）
         LockCursor(true);
@@ -940,6 +954,273 @@ public class Chat : MonoBehaviour
     }
     
     // 显示系统提示
+    void TryShowChapter05RouteGuideAfterPageCollected()
+    {
+        if (hasShownChapter05RouteGuide)
+        {
+            return;
+        }
+
+        GardenGameManager manager = GardenGameManager.Instance != null
+            ? GardenGameManager.Instance
+            : FindObjectOfType<GardenGameManager>();
+
+        if (manager == null || manager.CurrentSaveData == null || !manager.CurrentSaveData.chapter04PageCollected)
+        {
+            return;
+        }
+
+        hasShownChapter05RouteGuide = true;
+        ShowChapter05RouteGuide(ResolveChapter05GuideStartPosition());
+    }
+
+    void ShowChapter05RouteGuide(Vector3 startPosition)
+    {
+        if (!TryResolveChapter05GuideTarget(chapter05GuideTargetOverride, out Vector3 targetPosition))
+        {
+            Debug.LogWarning("Chat could not create the Chapter 05 route guide because no westTrigger or Chapter05 target was found.");
+            return;
+        }
+
+        DestroyChapter05RouteGuide();
+
+        GameObject routeGuideObject = new GameObject(string.IsNullOrWhiteSpace(chapter05RouteGuideObjectName)
+            ? "Chapter04ToChapter05RouteGuide"
+            : chapter05RouteGuideObjectName);
+        chapter05RouteGuideRoot = routeGuideObject.transform;
+        chapter05RouteGuideRoot.SetParent(ResolveChapter05RouteGuideParent(), false);
+
+        Transform startMarker = CreateRouteGuideMarker("Chapter04ScholarStart", chapter05RouteGuideRoot, startPosition);
+        Transform targetMarker = CreateRouteGuideMarker("Chapter05Target", chapter05RouteGuideRoot, targetPosition);
+        Transform[] routeMarkers = ResolveChapter05RouteMarkers(startPosition, targetPosition, chapter05RouteGuideRoot);
+
+        Chapter01AuthoredRouteGuide routeGuide = routeGuideObject.AddComponent<Chapter01AuthoredRouteGuide>();
+        routeGuide.manager = GardenGameManager.Instance;
+        routeGuide.director = null;
+        routeGuide.introController = null;
+        routeGuide.playerStartPose = startMarker;
+        routeGuide.targetGate = targetMarker;
+        routeGuide.authoredRouteRootName = chapter05RouteGuideRootName;
+        routeGuide.routePoints = routeMarkers;
+        routeGuide.showGuideOnStart = true;
+        routeGuide.useResolvedRouteFallback = false;
+        routeGuide.smoothControlPoints = true;
+        routeGuide.reachedRadius = Mathf.Max(1.5f, chapter05RouteGuideReachedRadius);
+        routeGuide.maxDecorationMarkers = Mathf.Max(1, chapter05RouteGuideMaxDecorations);
+        routeGuide.RebuildGuide();
+    }
+
+    Transform[] ResolveChapter05RouteMarkers(Vector3 startPosition, Vector3 targetPosition, Transform fallbackParent)
+    {
+        Transform authoredRoot = FindChapter05RouteRoot();
+        if (authoredRoot != null)
+        {
+            Transform[] authoredMarkers = new Transform[authoredRoot.childCount];
+            for (int index = 0; index < authoredRoot.childCount; index++)
+            {
+                authoredMarkers[index] = authoredRoot.GetChild(index);
+            }
+
+            Array.Sort(authoredMarkers, (left, right) => string.CompareOrdinal(left.name, right.name));
+            if (authoredMarkers.Length > 0)
+            {
+                return authoredMarkers;
+            }
+        }
+
+        Transform generatedPointRoot = fallbackParent;
+        if (fallbackParent != null && !string.IsNullOrWhiteSpace(chapter05RouteGuideRootName))
+        {
+            GameObject pointRootObject = new GameObject(chapter05RouteGuideRootName);
+            generatedPointRoot = pointRootObject.transform;
+            generatedPointRoot.SetParent(fallbackParent, false);
+        }
+
+        return CreateChapter05FallbackRouteMarkers(startPosition, targetPosition, generatedPointRoot);
+    }
+
+    Transform[] CreateChapter05FallbackRouteMarkers(Vector3 startPosition, Vector3 targetPosition, Transform fallbackParent)
+    {
+        int pointCount = Mathf.Max(5, chapter05RouteGuideAutoPointCount);
+        Transform[] markers = new Transform[pointCount];
+        Vector3 flatDelta = targetPosition - startPosition;
+        flatDelta.y = 0f;
+
+        Vector3 forward = flatDelta.sqrMagnitude > 0.01f ? flatDelta.normalized : Vector3.forward;
+        Vector3 side = Vector3.Cross(Vector3.up, forward);
+        if (side.sqrMagnitude < 0.001f)
+        {
+            side = Vector3.right;
+        }
+        side.Normalize();
+
+        float routeLength = flatDelta.magnitude;
+        float bendOffset = Mathf.Clamp(routeLength * 0.16f, 3f, 14f);
+        float[] bendSigns = { -0.8f, -1f, -0.25f, 0.6f, 0.95f };
+
+        for (int index = 0; index < pointCount; index++)
+        {
+            float t = (index + 1f) / (pointCount + 1f);
+            float centeredT = (t - 0.5f) * 2f;
+            float offsetStrength = 0.5f + (1f - Mathf.Abs(centeredT)) * 0.5f;
+            float sign = bendSigns[Mathf.Min(index, bendSigns.Length - 1)];
+            Vector3 markerPosition = Vector3.Lerp(startPosition, targetPosition, t) + side * sign * bendOffset * offsetStrength;
+            markers[index] = CreateRouteGuideMarker("Chapter04ToChapter05Point_" + index.ToString("00"), fallbackParent, markerPosition);
+        }
+
+        return markers;
+    }
+
+    Transform FindChapter05RouteRoot()
+    {
+        if (string.IsNullOrWhiteSpace(chapter05RouteGuideRootName))
+        {
+            return null;
+        }
+
+        Transform localRoot = transform.Find(chapter05RouteGuideRootName);
+        if (localRoot != null)
+        {
+            return localRoot;
+        }
+
+        GameObject rootObject = GameObject.Find(chapter05RouteGuideRootName);
+        return rootObject != null ? rootObject.transform : null;
+    }
+
+    Transform ResolveChapter05RouteGuideParent()
+    {
+        Transform authoredRoot = FindChapter05RouteRoot();
+        return authoredRoot != null ? authoredRoot.parent : null;
+    }
+
+    Vector3 ResolveChapter05GuideStartPosition()
+    {
+        Transform scholar = FindScholarTransformInScene();
+        if (scholar != null)
+        {
+            return scholar.position;
+        }
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            return player.transform.position;
+        }
+
+        player = GameObject.Find("Player");
+        if (player != null)
+        {
+            return player.transform.position;
+        }
+
+        return transform.position;
+    }
+
+    public static bool TryResolveChapter05GuideTarget(Transform explicitTarget, out Vector3 targetPosition)
+    {
+        if (explicitTarget != null)
+        {
+            targetPosition = explicitTarget.position;
+            return true;
+        }
+
+        string[] targetNames = { "westTrigger", "Chapter05", "JSL", "PageSpawnPoint" };
+        for (int index = 0; index < targetNames.Length; index++)
+        {
+            GameObject target = GameObject.Find(targetNames[index]);
+            if (target != null)
+            {
+                targetPosition = target.transform.position;
+                return true;
+            }
+        }
+
+        Transform[] transforms = FindObjectsOfType<Transform>(true);
+        for (int index = 0; index < transforms.Length; index++)
+        {
+            Transform candidate = transforms[index];
+            if (candidate != null
+                && (string.Equals(candidate.name, "westTrigger", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(candidate.name, "Chapter05", StringComparison.OrdinalIgnoreCase)))
+            {
+                targetPosition = candidate.position;
+                return true;
+            }
+        }
+
+        targetPosition = Vector3.zero;
+        return false;
+    }
+
+    static Transform FindScholarTransformInScene()
+    {
+        GameObject activeScholar = GameObject.Find("shusheng");
+        if (activeScholar != null)
+        {
+            return activeScholar.transform;
+        }
+
+        activeScholar = GameObject.Find("\u4e66\u751f");
+        if (activeScholar != null)
+        {
+            return activeScholar.transform;
+        }
+
+        Transform[] transforms = FindObjectsOfType<Transform>(true);
+        for (int index = 0; index < transforms.Length; index++)
+        {
+            Transform candidate = transforms[index];
+            if (candidate != null
+                && (string.Equals(candidate.name, "shusheng", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(candidate.name, "\u4e66\u751f", StringComparison.Ordinal)))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    static Transform CreateRouteGuideMarker(string markerName, Transform parent, Vector3 position)
+    {
+        GameObject markerObject = new GameObject(markerName);
+        Transform marker = markerObject.transform;
+        marker.SetParent(parent, false);
+        marker.position = position;
+        return marker;
+    }
+
+    void DestroyChapter05RouteGuide()
+    {
+        if (chapter05RouteGuideRoot == null)
+        {
+            GameObject existingObject = GameObject.Find(string.IsNullOrWhiteSpace(chapter05RouteGuideObjectName)
+                ? "Chapter04ToChapter05RouteGuide"
+                : chapter05RouteGuideObjectName);
+            if (existingObject != null)
+            {
+                chapter05RouteGuideRoot = existingObject.transform;
+            }
+        }
+
+        if (chapter05RouteGuideRoot == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(chapter05RouteGuideRoot.gameObject);
+        }
+        else
+        {
+            DestroyImmediate(chapter05RouteGuideRoot.gameObject);
+        }
+
+        chapter05RouteGuideRoot = null;
+    }
+
     void ShowSystemPrompt(string text)
     {
         if (systemPromptPanel != null)

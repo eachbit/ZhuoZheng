@@ -1,7 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using ZhuozhengYuan;
 using TMPro; // 添加TextMeshPro支持
 
 public class JSL : MonoBehaviour
@@ -28,6 +30,13 @@ public class JSL : MonoBehaviour
     public GameObject pagePrefab;            // 残页预制体(可选,如果为空则自动创建Cube)
     public Transform pageSpawnPoint;         // 残页生成点(匾额位置)
     public Material pageMaterial;            // 残页材质(可选,让Cube更好看)
+    public float pagePickupDistance = 2.5f;
+    public Transform chapter06GuideTargetOverride;
+    public string chapter06RouteGuideObjectName = "Chapter05ToChapter06RouteGuide";
+    public string chapter06RouteGuideRootName = "chapter05ToChapter06GuidePath";
+    public float chapter06RouteGuideReachedRadius = 4f;
+    public int chapter06RouteGuideMaxDecorations = 6;
+    public int chapter06RouteGuideAutoPointCount = 5;
     
     // 状态标记
     private bool hasTriggeredNorth = false;
@@ -40,6 +49,11 @@ public class JSL : MonoBehaviour
     private bool isCardShowing = false;
     private bool hasCollectedPage = false;
     private bool isLevelComplete = false;
+    private bool hasLastTriggeredDirectionPosition = false;
+    private Vector3 lastTriggeredDirectionPosition = Vector3.zero;
+    private GameObject activeDroppedPage = null;
+    private bool hasShownChapter06RouteGuide = false;
+    private Transform chapter06RouteGuideRoot = null;
     
     // 协程引用
     private Coroutine currentPromptCoroutine = null;
@@ -70,6 +84,8 @@ public class JSL : MonoBehaviour
             uiHintPanel.SetActive(false);
             Debug.Log("UIHintPanel 已隐藏");
         }
+
+        ApplyChapter05UIStyle();
         
         // 检查碰撞体配置
         Debug.Log("=== 碰撞体配置检查 ===");
@@ -120,12 +136,6 @@ public class JSL : MonoBehaviour
         // 检查是否所有方位都已访问
         CheckAllDirectionsVisited();
         
-        // 按E键仰观见山楼
-        if (Input.GetKeyDown(KeyCode.E) && allDirectionsVisited && !isLookingUp && !hasCompletedLookUp)
-        {
-            StartCoroutine(LookUpAnimation());
-        }
-        
         // 按空格键关闭文化卡牌
         if (Input.GetKeyDown(KeyCode.Space) && isCardShowing)
         {
@@ -133,7 +143,7 @@ public class JSL : MonoBehaviour
         }
         
         // 按E键拾取残页
-        if (Input.GetKeyDown(KeyCode.E) && hasCompletedLookUp && !hasCollectedPage && !isCardShowing)
+        if (Input.GetKeyDown(KeyCode.E) && allDirectionsVisited && !hasCollectedPage && !isCardShowing && CanPickUpDroppedPage())
         {
             CollectPage();
         }
@@ -153,6 +163,136 @@ public class JSL : MonoBehaviour
             }
         }
     }
+
+    void ApplyChapter05UIStyle()
+    {
+        ApplyChapter05Frame(systemPromptPanel, false);
+        ApplyChapter05Frame(cultureCardPanel, true);
+        ApplyChapter05Frame(uiHintPanel, false);
+        ApplyChapter05PanelLayout();
+
+        ConstrainTextToFrame(GetTextComponent(systemPromptTextObject), true);
+        ConstrainTextToFrame(GetTextComponent(uiHintTextObject), true);
+
+        if (cultureCardPanel != null)
+        {
+            TextMeshProUGUI[] tmpTexts = cultureCardPanel.GetComponentsInChildren<TextMeshProUGUI>(true);
+            foreach (TextMeshProUGUI tmpText in tmpTexts)
+            {
+                ConstrainTextToFrame(tmpText, false);
+            }
+
+            Text[] legacyTexts = cultureCardPanel.GetComponentsInChildren<Text>(true);
+            foreach (Text legacyText in legacyTexts)
+            {
+                ConstrainTextToFrame(legacyText, false);
+            }
+        }
+    }
+
+    void ApplyChapter05PanelLayout()
+    {
+        ApplyPanelLayout(systemPromptPanel, new Vector2(0.24f, 0.55f), new Vector2(0.76f, 0.75f));
+        ApplyPanelLayout(cultureCardPanel, new Vector2(0.23f, 0.20f), new Vector2(0.77f, 0.68f));
+        ApplyPanelLayout(uiHintPanel, new Vector2(0.30f, 0.08f), new Vector2(0.70f, 0.18f));
+    }
+
+    static void ApplyPanelLayout(GameObject panel, Vector2 anchorMin, Vector2 anchorMax)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        RectTransform rectTransform = panel.GetComponent<RectTransform>();
+        if (rectTransform == null)
+        {
+            return;
+        }
+
+        rectTransform.anchorMin = anchorMin;
+        rectTransform.anchorMax = anchorMax;
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+    }
+
+    void ApplyChapter05Frame(GameObject panel, bool strongPanel)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        if (strongPanel)
+        {
+            Chapter04PlaqueFrame.ApplyPanel(panel);
+        }
+        else
+        {
+            Chapter04PlaqueFrame.ApplySoftPanel(panel);
+        }
+    }
+
+    void ConstrainTextToFrame(Component textComp, bool stretchToPanel)
+    {
+        if (textComp == null)
+        {
+            return;
+        }
+
+        if (textComp is TextMeshProUGUI tmpText)
+        {
+            TMP_FontAsset originalFont = tmpText.font;
+            float currentSize = tmpText.fontSize > 0f ? tmpText.fontSize : 24f;
+
+            tmpText.enableWordWrapping = true;
+            tmpText.enableAutoSizing = true;
+            tmpText.overflowMode = TextOverflowModes.Truncate;
+            tmpText.fontSizeMin = Mathf.Clamp(tmpText.fontSizeMin > 0f ? tmpText.fontSizeMin : 12f, 8f, currentSize);
+            tmpText.fontSizeMax = Mathf.Max(currentSize, tmpText.fontSizeMax);
+            tmpText.margin = new Vector4(12f, 8f, 12f, 8f);
+            tmpText.font = originalFont;
+
+            if (stretchToPanel)
+            {
+                InsetTextRect(tmpText.rectTransform);
+            }
+
+            return;
+        }
+
+        if (textComp is Text uiText)
+        {
+            Font originalFont = uiText.font;
+            int currentSize = Mathf.Max(12, uiText.fontSize);
+
+            uiText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            uiText.verticalOverflow = VerticalWrapMode.Truncate;
+            uiText.resizeTextForBestFit = true;
+            uiText.resizeTextMinSize = Mathf.Clamp(uiText.resizeTextMinSize > 0 ? uiText.resizeTextMinSize : 12, 8, currentSize);
+            uiText.resizeTextMaxSize = Mathf.Max(currentSize, uiText.resizeTextMaxSize);
+            uiText.font = originalFont;
+
+            if (stretchToPanel)
+            {
+                InsetTextRect(uiText.rectTransform);
+            }
+        }
+    }
+
+    static void InsetTextRect(RectTransform rectTransform)
+    {
+        if (rectTransform == null)
+        {
+            return;
+        }
+
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = new Vector2(18f, 14f);
+        rectTransform.offsetMax = new Vector2(-18f, -14f);
+    }
     
     /// <summary>
     /// 检查是否所有方位都已访问
@@ -166,12 +306,9 @@ public class JSL : MonoBehaviour
             ShowSystemPrompt(new string[] {
                 "三面环水,西山连陆。下层藕香榭,上层见山楼。"
             }, 4f);
-            
-            // 显示文化卡牌
-            StartCoroutine(ShowCultureCardAfterDelay(2f));
-            
-            // 显示UI交互提示
-            ShowUIHint("按 E 仰观见山楼");
+
+            hasCompletedLookUp = true;
+            DropChapter05PageAtLastTrigger();
         }
     }
     
@@ -252,6 +389,7 @@ public class JSL : MonoBehaviour
         if (!hasTriggeredNorth)
         {
             hasTriggeredNorth = true;
+            RecordLastTriggeredDirection(northCollider);
             ShowSystemPrompt(new string[] {
                 "北面环水,楼在水中。",
                 "见山楼北、东、南三面皆水,唯西面连陆。",
@@ -269,6 +407,7 @@ public class JSL : MonoBehaviour
         if (!hasTriggeredEast)
         {
             hasTriggeredEast = true;
+            RecordLastTriggeredDirection(eastCollider);
             ShowSystemPrompt(new string[] {
                 "东面临池,倒影入画。",
                 "楼影与真身相接,虚实之间。",
@@ -286,6 +425,7 @@ public class JSL : MonoBehaviour
         if (!hasTriggeredSouth)
         {
             hasTriggeredSouth = true;
+            RecordLastTriggeredDirection(southCollider);
             ShowSystemPrompt(new string[] {
                 "南面开阔,远山可借。",
                 "'见山楼'之名,取自陶渊明'采菊东篱下,悠然见南山'。",
@@ -303,6 +443,7 @@ public class JSL : MonoBehaviour
         if (!hasTriggeredWest)
         {
             hasTriggeredWest = true;
+            RecordLastTriggeredDirection(westCollider);
             ShowSystemPrompt(new string[] {
                 "西侧假山,登楼之道。",
                 "二楼入口不在楼内,而藏于西侧假山之中。",
@@ -407,6 +548,82 @@ public class JSL : MonoBehaviour
         Bounds bounds = collider.bounds;
         return bounds.Contains(point);
     }
+
+    void RecordLastTriggeredDirection(Collider directionCollider)
+    {
+        if (directionCollider == null)
+        {
+            return;
+        }
+
+        lastTriggeredDirectionPosition = directionCollider.transform.position;
+        hasLastTriggeredDirectionPosition = true;
+    }
+
+    void DropChapter05PageAtLastTrigger()
+    {
+        if (hasCollectedPage || activeDroppedPage != null)
+        {
+            return;
+        }
+
+        CloseCultureCard();
+
+        Vector3 dropPosition = ResolveChapter05PageDropPosition();
+        GameObject page = pagePrefab != null
+            ? Instantiate(pagePrefab, dropPosition, Quaternion.identity)
+            : CreatePageCube();
+
+        page.name = "Chapter05_DroppedPage";
+        page.transform.position = dropPosition;
+        page.SetActive(true);
+        activeDroppedPage = page;
+
+        ShowUIHint("按 E 拾取《长物志》残页");
+    }
+
+    Vector3 ResolveChapter05PageDropPosition()
+    {
+        if (hasLastTriggeredDirectionPosition)
+        {
+            return lastTriggeredDirectionPosition;
+        }
+
+        if (pageSpawnPoint != null)
+        {
+            return pageSpawnPoint.position;
+        }
+
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player == null)
+        {
+            player = GameObject.Find("Player");
+        }
+
+        return player != null ? player.transform.position : transform.position;
+    }
+
+    bool CanPickUpDroppedPage()
+    {
+        if (activeDroppedPage == null)
+        {
+            return false;
+        }
+
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player == null)
+        {
+            player = GameObject.Find("Player");
+        }
+
+        if (player == null)
+        {
+            return true;
+        }
+
+        float distance = Vector3.Distance(player.transform.position, activeDroppedPage.transform.position);
+        return distance <= Mathf.Max(0.5f, pagePickupDistance);
+    }
     
     /// <summary>
     /// 显示系统提示(逐行显示)
@@ -434,6 +651,7 @@ public class JSL : MonoBehaviour
         
         // 获取文本组件
         Component textComp = GetTextComponent(systemPromptTextObject);
+        ConstrainTextToFrame(textComp, true);
         
         // 清除现有文本
         SetTextContent(textComp, "");
@@ -472,6 +690,7 @@ public class JSL : MonoBehaviour
             SetPanelBackground(uiHintPanel, new Color(0f, 0f, 0f, 0.5f));
             
             Component textComp = GetTextComponent(uiHintTextObject);
+            ConstrainTextToFrame(textComp, true);
             SetTextContent(textComp, hintText);
         }
     }
@@ -687,24 +906,34 @@ public class JSL : MonoBehaviour
     {
         hasCollectedPage = true;
         HideUIHint();
-        
-        // 生成残页并播放飞行动画
-        if (pageSpawnPoint != null)
+
+        GardenGameManager manager = GardenGameManager.Instance;
+        if (manager != null && manager.CurrentSaveData != null)
         {
-            GameObject page;
-            
-            // 如果提供了预制体,使用预制体;否则创建Cube
-            if (pagePrefab != null)
+            bool awarded = TryAwardChapter05Page(manager.CurrentSaveData, manager.totalPages);
+            if (awarded)
             {
-                page = Instantiate(pagePrefab, pageSpawnPoint.position, Quaternion.identity);
+                manager.RefreshCollectedPagesDisplay();
+                manager.ShowPageReward("残页 +1", "获得《长物志》残页。", 3.8f);
+                manager.SaveProgress();
+                manager.RefreshGlobalObjective();
             }
-            else
-            {
-                // 创建Cube作为残页
-                page = CreatePageCube();
-                page.transform.position = pageSpawnPoint.position;
-            }
-            
+        }
+
+        GameObject page = activeDroppedPage;
+        activeDroppedPage = null;
+        Vector3 pickupPosition = page != null ? page.transform.position : ResolveChapter05PageDropPosition();
+
+        if (page == null)
+        {
+            page = pagePrefab != null
+                ? Instantiate(pagePrefab, pickupPosition, Quaternion.identity)
+                : CreatePageCube();
+            page.transform.position = pickupPosition;
+        }
+
+        if (page != null)
+        {
             StartCoroutine(FlyPageToPlayer(page));
         }
         
@@ -715,6 +944,7 @@ public class JSL : MonoBehaviour
         }, 4f);
         
         // 关卡完成
+        ShowChapter06RouteGuideAfterPageCollected(pickupPosition);
         StartCoroutine(CompleteLevel());
     }
     
@@ -804,6 +1034,224 @@ public class JSL : MonoBehaviour
         // 到达玩家位置后销毁
         Destroy(page);
     }
+
+    static bool TryAwardChapter05Page(SaveData saveData, int totalPages)
+    {
+        if (saveData == null || saveData.chapter05PageCollected)
+        {
+            return false;
+        }
+
+        saveData.chapter05PageCollected = true;
+        saveData.collectedPages = Mathf.Clamp(saveData.collectedPages + 1, 0, Mathf.Max(1, totalPages));
+        return true;
+    }
+
+    void ShowChapter06RouteGuideAfterPageCollected(Vector3 pickupPosition)
+    {
+        if (hasShownChapter06RouteGuide)
+        {
+            return;
+        }
+
+        hasShownChapter06RouteGuide = true;
+        ShowChapter06RouteGuide(pickupPosition);
+    }
+
+    void ShowChapter06RouteGuide(Vector3 startPosition)
+    {
+        if (!TryResolveChapter06GuideTarget(chapter06GuideTargetOverride, out Vector3 targetPosition))
+        {
+            Debug.LogWarning("JSL could not create the Chapter 06 route guide because no Chaper06_TestTrigger target was found.");
+            return;
+        }
+
+        DestroyChapter06RouteGuide();
+
+        GameObject routeGuideObject = new GameObject(string.IsNullOrWhiteSpace(chapter06RouteGuideObjectName)
+            ? "Chapter05ToChapter06RouteGuide"
+            : chapter06RouteGuideObjectName);
+        chapter06RouteGuideRoot = routeGuideObject.transform;
+        chapter06RouteGuideRoot.SetParent(ResolveChapter06RouteGuideParent(), false);
+
+        Transform startMarker = CreateRouteGuideMarker("Chapter05PagePickupStart", chapter06RouteGuideRoot, startPosition);
+        Transform targetMarker = CreateRouteGuideMarker("Chapter06Target", chapter06RouteGuideRoot, targetPosition);
+        Transform[] routeMarkers = ResolveChapter06RouteMarkers(startPosition, targetPosition, chapter06RouteGuideRoot);
+
+        Chapter01AuthoredRouteGuide routeGuide = routeGuideObject.AddComponent<Chapter01AuthoredRouteGuide>();
+        routeGuide.manager = GardenGameManager.Instance;
+        routeGuide.director = null;
+        routeGuide.introController = null;
+        routeGuide.playerStartPose = startMarker;
+        routeGuide.targetGate = targetMarker;
+        routeGuide.authoredRouteRootName = chapter06RouteGuideRootName;
+        routeGuide.routePoints = routeMarkers;
+        routeGuide.showGuideOnStart = true;
+        routeGuide.useResolvedRouteFallback = false;
+        routeGuide.smoothControlPoints = true;
+        routeGuide.reachedRadius = Mathf.Max(1.5f, chapter06RouteGuideReachedRadius);
+        routeGuide.maxDecorationMarkers = Mathf.Max(1, chapter06RouteGuideMaxDecorations);
+        routeGuide.RebuildGuide();
+    }
+
+    Transform[] ResolveChapter06RouteMarkers(Vector3 startPosition, Vector3 targetPosition, Transform fallbackParent)
+    {
+        Transform authoredRoot = FindChapter06RouteRoot();
+        if (authoredRoot != null)
+        {
+            Transform[] authoredMarkers = new Transform[authoredRoot.childCount];
+            for (int index = 0; index < authoredRoot.childCount; index++)
+            {
+                authoredMarkers[index] = authoredRoot.GetChild(index);
+            }
+
+            Array.Sort(authoredMarkers, (left, right) => string.CompareOrdinal(left.name, right.name));
+            if (authoredMarkers.Length > 0)
+            {
+                return authoredMarkers;
+            }
+        }
+
+        Transform generatedPointRoot = fallbackParent;
+        if (fallbackParent != null && !string.IsNullOrWhiteSpace(chapter06RouteGuideRootName))
+        {
+            GameObject pointRootObject = new GameObject(chapter06RouteGuideRootName);
+            generatedPointRoot = pointRootObject.transform;
+            generatedPointRoot.SetParent(fallbackParent, false);
+        }
+
+        return CreateChapter06FallbackRouteMarkers(startPosition, targetPosition, generatedPointRoot);
+    }
+
+    Transform[] CreateChapter06FallbackRouteMarkers(Vector3 startPosition, Vector3 targetPosition, Transform fallbackParent)
+    {
+        int pointCount = Mathf.Max(5, chapter06RouteGuideAutoPointCount);
+        Transform[] markers = new Transform[pointCount];
+        Vector3 flatDelta = targetPosition - startPosition;
+        flatDelta.y = 0f;
+
+        Vector3 forward = flatDelta.sqrMagnitude > 0.01f ? flatDelta.normalized : Vector3.forward;
+        Vector3 side = Vector3.Cross(Vector3.up, forward);
+        if (side.sqrMagnitude < 0.001f)
+        {
+            side = Vector3.right;
+        }
+        side.Normalize();
+
+        float routeLength = flatDelta.magnitude;
+        float bendOffset = Mathf.Clamp(routeLength * 0.12f, 3f, 10f);
+        float[] bendSigns = { 0.4f, 0.75f, 0.35f, -0.25f, -0.6f };
+
+        for (int index = 0; index < pointCount; index++)
+        {
+            float t = (index + 1f) / (pointCount + 1f);
+            float centeredT = (t - 0.5f) * 2f;
+            float offsetStrength = 0.5f + (1f - Mathf.Abs(centeredT)) * 0.5f;
+            float sign = bendSigns[Mathf.Min(index, bendSigns.Length - 1)];
+            Vector3 markerPosition = Vector3.Lerp(startPosition, targetPosition, t) + side * sign * bendOffset * offsetStrength;
+            markers[index] = CreateRouteGuideMarker("Chapter05ToChapter06Point_" + index.ToString("00"), fallbackParent, markerPosition);
+        }
+
+        return markers;
+    }
+
+    Transform FindChapter06RouteRoot()
+    {
+        if (string.IsNullOrWhiteSpace(chapter06RouteGuideRootName))
+        {
+            return null;
+        }
+
+        Transform localRoot = transform.Find(chapter06RouteGuideRootName);
+        if (localRoot != null)
+        {
+            return localRoot;
+        }
+
+        GameObject rootObject = GameObject.Find(chapter06RouteGuideRootName);
+        return rootObject != null ? rootObject.transform : null;
+    }
+
+    Transform ResolveChapter06RouteGuideParent()
+    {
+        Transform authoredRoot = FindChapter06RouteRoot();
+        return authoredRoot != null ? authoredRoot.parent : null;
+    }
+
+    static bool TryResolveChapter06GuideTarget(Transform explicitTarget, out Vector3 targetPosition)
+    {
+        if (explicitTarget != null)
+        {
+            targetPosition = explicitTarget.position;
+            return true;
+        }
+
+        string[] targetNames = { "Chaper06_TestTrigger", "Chapter06_TestTrigger", "Chapter06", "chapter06" };
+        for (int index = 0; index < targetNames.Length; index++)
+        {
+            GameObject target = GameObject.Find(targetNames[index]);
+            if (target != null)
+            {
+                targetPosition = target.transform.position;
+                return true;
+            }
+        }
+
+        Transform[] transforms = FindObjectsOfType<Transform>(true);
+        for (int index = 0; index < transforms.Length; index++)
+        {
+            Transform candidate = transforms[index];
+            if (candidate != null
+                && (string.Equals(candidate.name, "Chaper06_TestTrigger", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(candidate.name, "Chapter06_TestTrigger", StringComparison.OrdinalIgnoreCase)))
+            {
+                targetPosition = candidate.position;
+                return true;
+            }
+        }
+
+        targetPosition = Vector3.zero;
+        return false;
+    }
+
+    static Transform CreateRouteGuideMarker(string markerName, Transform parent, Vector3 position)
+    {
+        GameObject markerObject = new GameObject(markerName);
+        Transform marker = markerObject.transform;
+        marker.SetParent(parent, false);
+        marker.position = position;
+        return marker;
+    }
+
+    void DestroyChapter06RouteGuide()
+    {
+        if (chapter06RouteGuideRoot == null)
+        {
+            GameObject existingObject = GameObject.Find(string.IsNullOrWhiteSpace(chapter06RouteGuideObjectName)
+                ? "Chapter05ToChapter06RouteGuide"
+                : chapter06RouteGuideObjectName);
+            if (existingObject != null)
+            {
+                chapter06RouteGuideRoot = existingObject.transform;
+            }
+        }
+
+        if (chapter06RouteGuideRoot == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(chapter06RouteGuideRoot.gameObject);
+        }
+        else
+        {
+            DestroyImmediate(chapter06RouteGuideRoot.gameObject);
+        }
+
+        chapter06RouteGuideRoot = null;
+    }
     
     /// <summary>
     /// 完成关卡
@@ -830,6 +1278,8 @@ public class JSL : MonoBehaviour
     {
         if (panel == null)
             return;
+
+        ApplyChapter05Frame(panel, panel == cultureCardPanel);
         
         UnityEngine.UI.Image image = panel.GetComponent<UnityEngine.UI.Image>();
         if (image != null)

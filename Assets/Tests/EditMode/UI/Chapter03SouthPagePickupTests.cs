@@ -90,6 +90,57 @@ namespace ZhuozhengYuan.Tests.EditMode
             }
         }
 
+        [Test]
+        public void ShowScholarRouteGuide_ShouldUseChapter01WorldSpaceVisualStyle()
+        {
+            Type northType = Type.GetType("North, Assembly-CSharp");
+            Assert.IsNotNull(northType, "North was not found.");
+
+            GameObject northObject = new GameObject("North", typeof(RectTransform));
+            GameObject scholar = new GameObject("shusheng");
+            Transform guideRoot = null;
+
+            try
+            {
+                northObject.transform.localScale = Vector3.one * 0.01f;
+                object north = northObject.AddComponent(northType);
+                scholar.transform.position = new Vector3(12f, 0f, 8f);
+
+                SetField(north, "scholarGuideTargetOverride", scholar.transform);
+                SetField(north, "scholarRouteGuideAutoPointCount", 5);
+
+                MethodInfo method = northType.GetMethod("ShowScholarRouteGuide", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsNotNull(method, "North should create the post-Chapter-3 scholar route guide.");
+                method.Invoke(north, new object[] { Vector3.zero });
+
+                guideRoot = GameObject.Find("Chapter03ToScholarRouteGuide")?.transform;
+                Assert.IsNotNull(guideRoot, "The scholar guide root should be created.");
+                Assert.IsNull(guideRoot.parent,
+                    "The scholar guide should live in world space instead of inheriting North's UI RectTransform scale.");
+
+                Transform runtimeRoot = guideRoot.Find("Chapter01AuthoredGuideRoot");
+                Assert.IsNotNull(runtimeRoot, "The scholar guide should reuse Chapter01AuthoredRouteGuide visuals.");
+                Assert.IsNotNull(runtimeRoot.Find("DecorationsRoot"), "Chapter 1 style decorations should be present.");
+                Assert.IsNotNull(runtimeRoot.Find("DestinationMarkerRoot"), "Chapter 1 style destination marker should be present.");
+
+                Transform segment = runtimeRoot.Find("GuideSegment_00");
+                Assert.IsNotNull(segment, "The guide should create Chapter 1 ribbon segments.");
+                Assert.LessOrEqual(segment.Find("Glow").localScale.x, 1.65f, "Glow strip should match the Chapter 1 narrow ribbon style.");
+                Assert.LessOrEqual(segment.Find("Main").localScale.x, 0.75f, "Main strip should match the Chapter 1 narrow ribbon style.");
+                Assert.LessOrEqual(segment.Find("Crest").localScale.x, 0.2f, "Crest strip should match the Chapter 1 narrow highlight style.");
+            }
+            finally
+            {
+                if (guideRoot != null)
+                {
+                    DestroyImmediateIfExists(guideRoot.gameObject);
+                }
+
+                DestroyImmediateIfExists(scholar);
+                DestroyImmediateIfExists(northObject);
+            }
+        }
+
         private static void SetField(object target, string fieldName, object value)
         {
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
