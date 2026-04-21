@@ -288,24 +288,12 @@ public class Chat : MonoBehaviour
         if (panel == null) return;
         
         Transform panelTransform = panel.transform;
+        TMP_Text ensuredSpeakerText = EnsureSpeakerNameText();
         
         // 设置说话者名字文本 - 顶部
-        if (speakerNameText != null)
+        if (ensuredSpeakerText != null)
         {
-            RectTransform rect = speakerNameText.GetComponent<RectTransform>();
-            if (rect != null)
-            {
-                rect.anchorMin = new Vector2(0.06f, 0.72f);
-                rect.anchorMax = new Vector2(0.94f, 0.92f);
-                rect.anchoredPosition = Vector2.zero;
-                rect.sizeDelta = Vector2.zero;
-                
-                // 设置文字样式
-                speakerNameText.fontSize = 24;
-                speakerNameText.alignment = TextAlignmentOptions.Left;
-                speakerNameText.enableWordWrapping = true;
-                speakerNameText.overflowMode = TextOverflowModes.Truncate;
-            }
+            ApplySpeakerNameTextLayout(ensuredSpeakerText);
         }
         
         // 设置对话内容文本 - 中间区域
@@ -456,7 +444,7 @@ public class Chat : MonoBehaviour
             lines = new DialogueLine[]
             {
                 new DialogueLine("听雨书生", "兄台也来避雨？请入。此轩虽小，足以容身。"),
-                new DialogueLine("", "（玩家进入轩内）"),
+                new DialogueLine("玩家", "（玩家进入轩内）"),
                 new DialogueLine("听雨书生", "兄台可知此轩之名？"),
                 new DialogueLine("听雨书生", "与谁同坐轩。"),
                 new DialogueLine("听雨书生", "在下初闻此名时，曾想——与谁同坐？是知己？是家人？还是……"),
@@ -473,10 +461,10 @@ public class Chat : MonoBehaviour
         {
             lines = new DialogueLine[]
             {
-                new DialogueLine("", "（镜头转向轩外雨景：雨打水面、涟漪层层、荷叶承雨微颤）"),
+                new DialogueLine("玩家", "（镜头转向轩外雨景：雨打水面、涟漪层层、荷叶承雨微颤）"),
                 new DialogueLine("听雨书生", "你听。"),
                 new DialogueLine("听雨书生", "这雨声。"),
-                new DialogueLine("", "（停顿，雨声凸显）"),
+                new DialogueLine("听雨书生", "（停顿，雨声凸显）"),
                 new DialogueLine("听雨书生", "《长物志》有言：'雨之为物，能令昼短，能令夜长。'"),
                 new DialogueLine("听雨书生", "有人厌雨，嫌它碍事。可在园子里，雨是最好的画师。"),
                 new DialogueLine("听雨书生", "无雨，涟漪不动；无雨，荷色徒绿。")
@@ -509,7 +497,7 @@ public class Chat : MonoBehaviour
                 new DialogueLine("听雨书生", "好眼力。此亭形如折扇，故又称'扇亭'。"),
                 new DialogueLine("听雨书生", "清末有位张先生，祖上以制扇起家，便建了这座扇亭以念先祖。"),
                 new DialogueLine("听雨书生", "你看那扇窗——"),
-                new DialogueLine("", "（指向扇形空窗）"),
+                new DialogueLine("听雨书生", "（指向扇形空窗）"),
                 new DialogueLine("听雨书生", "框住的是景，藏住的是心。")
             },
             nextStage = 4,
@@ -521,13 +509,13 @@ public class Chat : MonoBehaviour
         {
             lines = new DialogueLine[]
             {
-                new DialogueLine("", "（雨声渐微，雨丝渐疏）"),
-                new DialogueLine("", "（云隙透光，水面现虹）"),
+                new DialogueLine("玩家", "（雨声渐微，雨丝渐疏）"),
+                new DialogueLine("玩家", "（云隙透光，水面现虹）"),
                 new DialogueLine("SYSTEM", "🌈 雨霁。"),
                 new DialogueLine("听雨书生", "雨停了。"),
-                new DialogueLine("", "（他转头看向玩家）"),
+                new DialogueLine("听雨书生", "（他转头看向玩家）"),
                 new DialogueLine("听雨书生", "兄台若有事在身，不必陪在下久留。"),
-                new DialogueLine("", "（他从袖中取出一卷竹简）"),
+                new DialogueLine("听雨书生", "（他从袖中取出一卷竹简）"),
                 new DialogueLine("听雨书生", "这卷残页，是在下前日于此亭中所拾。"),
                 new DialogueLine("听雨书生", "读来应是《长物志》散佚之篇。"),
                 new DialogueLine("听雨书生", "在下四处游历，不便携带。兄台既来修园，不如赠你。"),
@@ -630,6 +618,13 @@ public class Chat : MonoBehaviour
         {
             dialoguePanel.SetActive(true);
             Debug.Log("  ✅ 对话框已激活");
+        }
+
+        TMP_Text ensuredSpeakerText = EnsureSpeakerNameText();
+        if (ensuredSpeakerText != null)
+        {
+            ApplySpeakerNameTextLayout(ensuredSpeakerText);
+            ensuredSpeakerText.gameObject.SetActive(true);
         }
         
         // 确保显示下一步按钮
@@ -736,32 +731,29 @@ public class Chat : MonoBehaviour
         
         // 显示说话者名字
         // 确保名字显示功能正常工作
-        if (speakerNameText != null)
+        TMP_Text ensuredSpeakerText = EnsureSpeakerNameText();
+        if (ensuredSpeakerText != null)
         {
-            if (string.IsNullOrEmpty(line.speaker))
+            string speaker = ResolveDialogueSpeaker(line);
+            if (string.IsNullOrWhiteSpace(speaker))
             {
-                // 说话者为空，隐藏名字文本
-                if (speakerNameText.gameObject.activeSelf)
-                {
-                    speakerNameText.gameObject.SetActive(false);
-                    Debug.Log($"  📝 隐藏说话者名字（空）");
-                }
+                speaker = "玩家";
             }
-            else
+
+            ApplySpeakerNameTextLayout(ensuredSpeakerText);
+
+            if (!ensuredSpeakerText.gameObject.activeSelf)
             {
-                // 说话者不为空，显示并设置名字
-                if (!speakerNameText.gameObject.activeSelf)
-                {
-                    speakerNameText.gameObject.SetActive(true);
-                    Debug.Log($"  ✅ 激活说话者名字组件");
-                }
-                speakerNameText.text = line.speaker;
-                Debug.Log($"  📝 显示说话者: {line.speaker}");
+                ensuredSpeakerText.gameObject.SetActive(true);
+                Debug.Log($"  ✅ 激活说话者名字组件");
             }
+
+            ensuredSpeakerText.text = speaker;
+            Debug.Log($"  📝 显示说话者: {speaker}");
         }
         else
         {
-            Debug.LogWarning("⚠️ speakerNameText 为 null！请在Inspector中赋值");
+            Debug.LogWarning("⚠️ speakerNameText 为 null，且无法自动创建。请检查 dialoguePanel 是否已赋值");
         }
         
         currentFullText = line.text;
@@ -771,6 +763,92 @@ public class Chat : MonoBehaviour
             StopCoroutine(typingCoroutine);
         
         typingCoroutine = StartCoroutine(TypeText(currentFullText));
+    }
+
+    string ResolveDialogueSpeaker(DialogueLine line)
+    {
+        if (line == null)
+        {
+            return "玩家";
+        }
+
+        if (!string.IsNullOrWhiteSpace(line.speaker))
+        {
+            return line.speaker == "SYSTEM" ? "系统" : line.speaker;
+        }
+
+        string text = line.text ?? string.Empty;
+        return text.Contains("他") || text.Contains("书生") || text.Contains("袖中") || text.Contains("指向")
+            ? "听雨书生"
+            : "玩家";
+    }
+
+    TMP_Text EnsureSpeakerNameText()
+    {
+        if (speakerNameText != null)
+        {
+            return speakerNameText;
+        }
+
+        if (dialoguePanel == null)
+        {
+            return null;
+        }
+
+        Transform existing = dialoguePanel.transform.Find("SpeakerNameText");
+        if (existing == null)
+        {
+            GameObject speakerObject = new GameObject("SpeakerNameText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            speakerObject.transform.SetParent(dialoguePanel.transform, false);
+            existing = speakerObject.transform;
+            Debug.Log("  ✅ 自动创建第四章说话人名字文本");
+        }
+
+        speakerNameText = existing.GetComponent<TMP_Text>();
+        if (speakerNameText == null)
+        {
+            speakerNameText = existing.gameObject.AddComponent<TextMeshProUGUI>();
+        }
+
+        if (chineseFontAsset != null)
+        {
+            speakerNameText.font = chineseFontAsset;
+        }
+
+        ApplySpeakerNameTextLayout(speakerNameText);
+        return speakerNameText;
+    }
+
+    void ApplySpeakerNameTextLayout(TMP_Text target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        RectTransform rect = target.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.anchorMin = new Vector2(0.07f, 0.72f);
+            rect.anchorMax = new Vector2(0.42f, 0.91f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.sizeDelta = Vector2.zero;
+        }
+
+        target.fontSize = 24;
+        target.enableAutoSizing = true;
+        target.fontSizeMin = 16;
+        target.fontSizeMax = 24;
+        target.alignment = TextAlignmentOptions.Left;
+        target.color = new Color(0.93f, 0.82f, 0.52f, 1f);
+        target.fontStyle = FontStyles.Bold;
+        target.enableWordWrapping = false;
+        target.overflowMode = TextOverflowModes.Truncate;
+        target.raycastTarget = false;
+        target.gameObject.SetActive(true);
+        target.transform.SetAsLastSibling();
     }
     
     // 打字机效果
@@ -1255,7 +1333,13 @@ public class Chat : MonoBehaviour
         if (nextButton != null)
             nextButton.gameObject.SetActive(true);
         
-        speakerNameText.text = "玩家";
+        TMP_Text ensuredSpeakerText = EnsureSpeakerNameText();
+        if (ensuredSpeakerText != null)
+        {
+            ApplySpeakerNameTextLayout(ensuredSpeakerText);
+            ensuredSpeakerText.gameObject.SetActive(true);
+            ensuredSpeakerText.text = "玩家";
+        }
         currentFullText = "多谢兄台。后会有期。";
         
         if (typingCoroutine != null)
@@ -1273,7 +1357,13 @@ public class Chat : MonoBehaviour
     {
         yield return new WaitForSeconds(1f);
         
-        speakerNameText.text = "听雨书生";
+        TMP_Text ensuredSpeakerText = EnsureSpeakerNameText();
+        if (ensuredSpeakerText != null)
+        {
+            ApplySpeakerNameTextLayout(ensuredSpeakerText);
+            ensuredSpeakerText.gameObject.SetActive(true);
+            ensuredSpeakerText.text = "听雨书生";
+        }
         currentFullText = "不必谢。这园子，本就该有人来修，有人来守。";
         
         if (typingCoroutine != null)

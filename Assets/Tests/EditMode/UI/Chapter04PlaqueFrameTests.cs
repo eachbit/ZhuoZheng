@@ -210,6 +210,89 @@ namespace ZhuozhengYuan.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Chapter04DialogueLines_ShouldAlwaysHaveVisibleSpeakerNames()
+        {
+            Type chatType = Type.GetType("Chat, Assembly-CSharp");
+            Assert.IsNotNull(chatType, "Chat was not found.");
+
+            GameObject root = new GameObject("ChatRoot");
+
+            try
+            {
+                object chat = root.AddComponent(chatType);
+                Invoke(chat, "InitializeDialogueData");
+
+                Array stages = (Array)GetField(chat, "stages");
+                Assert.IsNotNull(stages, "Dialogue stages should be initialized.");
+
+                for (int stageIndex = 0; stageIndex < stages.Length; stageIndex++)
+                {
+                    object stage = stages.GetValue(stageIndex);
+                    Array lines = (Array)GetField(stage, "lines");
+                    Assert.IsNotNull(lines, $"Stage {stageIndex} should have dialogue lines.");
+
+                    for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+                    {
+                        object line = lines.GetValue(lineIndex);
+                        string speaker = (string)GetField(line, "speaker");
+                        string text = (string)GetField(line, "text");
+
+                        if (string.Equals(speaker, "SYSTEM", StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        Assert.IsFalse(string.IsNullOrWhiteSpace(speaker), $"Stage {stageIndex}, line {lineIndex} is missing a speaker: {text}");
+                        Assert.IsTrue(speaker == "听雨书生" || speaker == "玩家" || speaker == "系统", $"Unexpected Chapter 04 speaker '{speaker}' at stage {stageIndex}, line {lineIndex}.");
+                    }
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void ShowCurrentLine_ShouldCreateVisibleSpeakerNameWhenSceneReferenceIsMissing()
+        {
+            Type chatType = Type.GetType("Chat, Assembly-CSharp");
+            Assert.IsNotNull(chatType, "Chat was not found.");
+
+            GameObject root = new GameObject("ChatRoot");
+            GameObject dialoguePanel = CreateUiObject("DialoguePanel");
+            GameObject dialogueTextObject = CreateTextChild("DialogueText", dialoguePanel.transform);
+
+            try
+            {
+                MonoBehaviour chat = (MonoBehaviour)root.AddComponent(chatType);
+                SetField(chat, "dialoguePanel", dialoguePanel);
+                SetField(chat, "dialogueText", dialogueTextObject.GetComponent<TextMeshProUGUI>());
+                SetField(chat, "speakerNameText", null);
+
+                Invoke(chat, "InitializeDialogueData");
+                SetField(chat, "currentStage", 0);
+                SetField(chat, "currentLineIndex", 0);
+
+                Invoke(chat, "ShowCurrentLine");
+
+                Transform speakerObject = dialoguePanel.transform.Find("SpeakerNameText");
+                Assert.IsNotNull(speakerObject, "Chat should create a speaker name text when the scene reference is missing.");
+
+                TextMeshProUGUI speakerText = speakerObject.GetComponent<TextMeshProUGUI>();
+                Assert.IsNotNull(speakerText, "The generated speaker name object should contain TextMeshProUGUI.");
+                Assert.AreEqual("听雨书生", speakerText.text);
+                Assert.IsTrue(speakerText.gameObject.activeSelf);
+                Assert.AreSame(speakerText, GetField(chat, "speakerNameText"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(dialoguePanel);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         private static GameObject CreateUiObject(string name)
         {
             return new GameObject(name, typeof(RectTransform), typeof(Image));
