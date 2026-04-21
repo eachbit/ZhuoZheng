@@ -176,6 +176,22 @@ namespace ZhuozhengYuan.Tests.EditMode
         }
 
         [Test]
+        public void DefaultQuestionBank_ShouldExplainReflectionOpticsBehindXiaoFeihongAesthetics()
+        {
+            Type directorType = Type.GetType("ZhuozhengYuan.Chapter02Director, Assembly-CSharp");
+            Assert.IsNotNull(directorType, "Chapter02Director was not found.");
+
+            Array questionBank = InvokeCreateDefaultQuestionBank(directorType);
+
+            AssertQuestionBankContains(questionBank, "\u6c34\u9762\u53cd\u5c04");
+            AssertQuestionBankContains(questionBank, "\u955c\u9762");
+            AssertQuestionBankContains(questionBank, "\u865a\u50cf");
+            AssertQuestionBankContains(questionBank, "\u5149\u5f71");
+            AssertQuestionBankContains(questionBank, "\u6ce2\u7eb9");
+            AssertQuestionBankContains(questionBank, "\u865a\u5b9e");
+        }
+
+        [Test]
         public void TryResolveChapter03GuideTarget_ShouldUseSouthFireParticlePosition()
         {
             Type directorType = Type.GetType("ZhuozhengYuan.Chapter02Director, Assembly-CSharp");

@@ -144,10 +144,42 @@ namespace ZhuozhengYuan.Tests.EditMode
             AssertQuestionBankContains(questionBank, "\u96ea\u9999\u4e91\u851a\u4ead");
             AssertQuestionBankContains(questionBank, "\u4e00\u6c60\u4e09\u5c9b");
             AssertQuestionBankContains(questionBank, "\u4e2d\u5c9b");
-            AssertQuestionBankContains(questionBank, "\u6885\u82b1");
             AssertQuestionBankContains(questionBank, "\u8fdc\u9999\u5802");
             AssertQuestionBankContains(questionBank, "\u77e9\u5f62\u65b9\u4ead");
-            AssertQuestionBankContains(questionBank, "\u5386\u53f2\u5e95\u8574");
+            AssertQuestionBankContains(questionBank, "\u5f00\u655e\u4ead");
+            AssertQuestionBankContains(questionBank, "\u89c2\u666f");
+            AssertQuestionBankContains(questionBank, "\u5bf9\u666f");
+            AssertQuestionBankContains(questionBank, "\u5c71\u6c34");
+        }
+
+        [Test]
+        public void DefaultQuestionBank_ShouldNotContainMetaGameplayOrUiQuestions()
+        {
+            Type directorType = Type.GetType("ZhuozhengYuan.Chapter06Director, Assembly-CSharp");
+            Assert.IsNotNull(directorType, "Chapter06Director was not found.");
+
+            Array questionBank = InvokeCreateDefaultQuestionBank(directorType);
+
+            string[] forbiddenTerms =
+            {
+                "\u7b2c\u516d\u7ae0",
+                "\u73a9\u5bb6",
+                "UI",
+                "\u6309\u94ae",
+                "\u7b54\u9898\u901f\u5ea6",
+                "\u4f20\u9001\u95e8",
+                "\u754c\u9762",
+                "\u6587\u6848",
+                "\u64cd\u4f5c",
+                "\u6e38\u620f\u673a\u5236",
+                "\u6536\u675f\u573a\u666f",
+                "\u9898\u76ee\u6700\u5e94\u8003\u5bdf"
+            };
+
+            for (int index = 0; index < forbiddenTerms.Length; index++)
+            {
+                AssertQuestionBankDoesNotContain(questionBank, forbiddenTerms[index]);
+            }
         }
 
         private static bool InvokeShouldShowFinaleObjective(Type directorType, object saveData)
@@ -192,6 +224,27 @@ namespace ZhuozhengYuan.Tests.EditMode
             }
 
             Assert.Fail("Question bank should contain architectural culture text: " + expectedText);
+        }
+
+        private static void AssertQuestionBankDoesNotContain(Array questionBank, string forbiddenText)
+        {
+            foreach (object question in questionBank)
+            {
+                Assert.IsFalse(Contains(GetField(question, "questionText"), forbiddenText), "Question text should not contain non-architectural quiz wording: " + forbiddenText);
+                Assert.IsFalse(Contains(GetField(question, "correctFeedback"), forbiddenText), "Correct feedback should not contain non-architectural quiz wording: " + forbiddenText);
+                Assert.IsFalse(Contains(GetField(question, "wrongFeedback"), forbiddenText), "Wrong feedback should not contain non-architectural quiz wording: " + forbiddenText);
+
+                string[] options = GetField(question, "options") as string[];
+                if (options == null)
+                {
+                    continue;
+                }
+
+                for (int index = 0; index < options.Length; index++)
+                {
+                    Assert.IsFalse(Contains(options[index], forbiddenText), "Option should not contain non-architectural quiz wording: " + forbiddenText);
+                }
+            }
         }
 
         private static bool OptionsContain(string[] options, string expectedText)

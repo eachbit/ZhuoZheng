@@ -651,11 +651,11 @@ namespace ZhuozhengYuan
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-01",
-                    questionText = "雪香云蔚亭在拙政园中部格局中，最适合被理解为哪类空间节点？",
-                    options = new[] { "一池三岛中岛上的登临观景点", "住宅区深处的封闭书房", "园门外侧的街巷牌楼", "水面中央的戏台基座" },
+                    questionText = "雪香云蔚亭在拙政园中部水院格局中，属于哪类园林建筑节点？",
+                    options = new[] { "山岛上的开敞观景亭", "住宅区深处的封闭书房", "园门外侧的街巷牌楼", "水面中央的戏台基座" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。雪香云蔚亭处在中部一池三岛的山岛体系中，是登临、观水、回望的重要节点。",
-                    wrongFeedback = "提示：它不是住宅建筑，而是中部水院山岛上的亭式观景点。"
+                    correctFeedback = "回答正确。雪香云蔚亭处在中部山岛体系中，承担停驻、观水和组织视线的亭式建筑功能。",
+                    wrongFeedback = "提示：它不是住宅建筑，而是中部水院山岛上的开敞亭。"
                 },
                 new Chapter02Question
                 {
@@ -669,56 +669,56 @@ namespace ZhuozhengYuan
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-03",
-                    questionText = "“雪香云蔚亭”题名中的“雪香”，主要把哪种文化意象带入场景？",
-                    options = new[] { "梅花如雪、暗香浮动的清雅意境", "荷叶连天、暑气蒸腾的夏景", "稻谷成熟、农事丰收的田园景", "松涛入耳、海浪翻涌的远景" },
+                    questionText = "雪香云蔚亭设置在山岛较高处，主要强化了哪种园林建筑体验？",
+                    options = new[] { "登高后形成俯看水面、回望园中建筑的视点", "把游线导入完全封闭的室内空间", "遮挡全部水景以突出墙面装饰", "只作为道路转角的封闭门楼" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。“雪香”常让人联想到梅花、雪色与幽香，把植物审美写进亭名。",
-                    wrongFeedback = "提示：这里的“香”与梅花有关，不是普通气味描写。"
+                    correctFeedback = "回答正确。亭位于较高的山岛位置，可形成俯瞰水面、回望厅堂和串联景观层次的视点。",
+                    wrongFeedback = "提示：这里考察的是亭的选址和视线组织，不是室内封闭功能。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-04",
-                    questionText = "从场景视线关系看，雪香云蔚亭与远香堂一带形成的体验更接近哪一种？",
-                    options = new[] { "在山岛与厅堂之间形成可互相观看的水院层次", "二者完全封闭，彼此没有景观联系", "亭只服务室内陈设，不参与水院构图", "远香堂只是背景贴图，不属于园林空间" },
+                    questionText = "从视线关系看，雪香云蔚亭与远香堂一带更接近哪种园林建筑处理？",
+                    options = new[] { "隔水相望，形成亭、堂、水面之间的对景关系", "二者完全封闭，彼此没有景观联系", "亭只服务室内陈设，不参与水院构图", "远香堂只作为道路附属门房" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。雪香云蔚亭所在山岛与远香堂方向的视线关系，能强化中部水院的空间层次。",
-                    wrongFeedback = "提示：拙政园中部常通过水面、山岛、厅堂互相成景，而不是让建筑孤立存在。"
+                    correctFeedback = "回答正确。雪香云蔚亭与远香堂可通过水面形成对景关系，强化中部水院的空间层次。",
+                    wrongFeedback = "提示：拙政园中部常通过水面、山岛、亭、堂互相成景，而不是让建筑孤立存在。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-05",
-                    questionText = "雪香云蔚亭的历史底蕴，应放在拙政园怎样的整体背景中理解？",
-                    options = new[] { "明代文人园林传统延续下的中部山水空间", "近代工厂厂区的附属休息亭", "城市道路交通设施的一部分", "皇家宫殿正殿前的礼仪建筑" },
+                    questionText = "亭类建筑在江南园林中常采用开敞形式，主要建筑作用是什么？",
+                    options = new[] { "减弱围合感，便于多方向观景和停留", "完全封闭视线，形成私密卧室", "提高城防功能，便于军事瞭望", "扩大商业铺面，方便沿街售卖" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。它的历史底蕴要联系拙政园明代以来的文人园林传统和中部水院格局来看。",
-                    wrongFeedback = "提示：这座亭属于拙政园历史园林语境，不是现代功能性小品。"
+                    correctFeedback = "回答正确。开敞亭能让游人短暂停留，并从多个方向观看山石、水面和其他园林建筑。",
+                    wrongFeedback = "提示：园林亭的重点通常是停留与观景，不是居住、售卖或防御。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-06",
-                    questionText = "雪香云蔚亭设于中岛高处，对玩家“登亭回望”的意义是什么？",
-                    options = new[] { "借较高视点回看水面、山石和园中建筑关系", "把玩家带离园林，进入完全无景空间", "只用于触发分数结算，与场景无关", "强调室内封闭感，避免看到水面" },
+                    questionText = "雪香云蔚亭与山石、水体组合时，体现了哪种园林建筑布局方式？",
+                    options = new[] { "以山为基、临水成景，使亭成为山水构图的节点", "把亭孤立放在平直街道中央", "用高墙切断亭与水面的联系", "只依赖室内家具形成景观" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。登上雪香云蔚亭，回望的是山岛、水面、远处建筑共同组成的园林画面。",
-                    wrongFeedback = "提示：最后的回望应该落在这个场景的空间关系，而不是单纯完成答题。"
+                    correctFeedback = "回答正确。亭、山石和水面共同组织空间，亭既是停留点，也是山水画面中的建筑节点。",
+                    wrongFeedback = "提示：这里考察的是亭与山水的组合关系，不是室内家具或街道设施。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-07",
-                    questionText = "雪香云蔚亭将“梅花”意象写入题名，体现了苏州园林怎样的文化表达？",
-                    options = new[] { "用植物、季节和诗意命名提升建筑内涵", "只说明亭子旁边必须摆放盆景", "强调建筑材料必须使用白石", "把亭子改造成储藏花木的空间" },
+                    questionText = "雪香云蔚亭这类小体量亭建筑，为什么适合放在山岛观景点？",
+                    options = new[] { "体量轻巧，不压住山石，并能提供停驻观景空间", "体量越大越好，便于遮住全部山景", "必须建成多层楼阁才能使用", "主要用于隔绝游人与园林环境" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。园林题名常把梅花、季节、诗意和人的观赏经验压缩进建筑名称。",
-                    wrongFeedback = "提示：这里考的是亭名背后的文化意象，不是植物摆放数量。"
+                    correctFeedback = "回答正确。小体量开敞亭能顺应山岛尺度，既不破坏山石轮廓，又提供停驻和观景功能。",
+                    wrongFeedback = "提示：山岛上的亭应顺应地形和观景需要，不宜以巨大封闭体量压住景观。"
                 },
                 new Chapter02Question
                 {
                     questionId = "xuexiang-yunwei-08",
-                    questionText = "如果第六章以雪香云蔚亭作为收束场景，题目最应考察什么？",
-                    options = new[] { "亭名文化、山岛位置、建筑形制和拙政园历史底蕴", "按钮顺序和答题速度", "玩家是否记住所有 UI 文案", "亭子是否能作为普通传送门" },
+                    questionText = "观察雪香云蔚亭时，判断其建筑价值最应关注哪组要素？",
+                    options = new[] { "亭的位置、开敞程度、观景方向和山水关系", "是否具备封闭居住空间和卧室功能", "是否沿街形成连续商业铺面", "是否采用城墙式防御结构" },
                     correctOptionIndex = 0,
-                    correctFeedback = "回答正确。第六章的重点应落在雪香云蔚亭这个场景自身的文化、建筑特色和历史底蕴。",
-                    wrongFeedback = "提示：这不是操作题，而是围绕当前亭景本身的文化理解题。"
+                    correctFeedback = "回答正确。理解雪香云蔚亭，应关注其位置、开敞亭形、观景方向以及与山石水面的组织关系。",
+                    wrongFeedback = "提示：这道题考察亭的建筑和空间关系，应从位置、形制、视线和山水组合来判断。"
                 }
             };
         }
