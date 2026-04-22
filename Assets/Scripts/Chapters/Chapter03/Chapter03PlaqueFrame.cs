@@ -58,10 +58,10 @@ internal static class Chapter03PlaqueFrame
             return;
         }
 
-        Image image = target.GetComponent<Image>();
-        if (image == null)
+        Image image;
+        if (!TryGetOrAddImage(target, out image))
         {
-            image = target.AddComponent<Image>();
+            return;
         }
 
         image.sprite = GetPlaqueBackgroundSprite();
@@ -123,7 +123,12 @@ internal static class Chapter03PlaqueFrame
             rectTransform.sizeDelta = new Vector2(fallbackThickness, rectTransform.sizeDelta.y);
         }
 
-        Image image = EnsureImage(strip);
+        Image image;
+        if (!TryGetOrAddImage(strip, out image))
+        {
+            return;
+        }
+
         image.color = GoldLineColor;
         image.raycastTarget = false;
         strip.transform.SetAsFirstSibling();
@@ -139,7 +144,12 @@ internal static class Chapter03PlaqueFrame
         rectTransform.sizeDelta = new Vector2(size, size);
         rectTransform.anchoredPosition = anchoredPosition;
 
-        Image image = EnsureImage(corner);
+        Image image;
+        if (!TryGetOrAddImage(corner, out image))
+        {
+            return;
+        }
+
         image.color = GoldCornerColor;
         image.raycastTarget = false;
         corner.transform.SetAsFirstSibling();
@@ -189,15 +199,21 @@ internal static class Chapter03PlaqueFrame
         return rectTransform;
     }
 
-    private static Image EnsureImage(GameObject target)
+    private static bool TryGetOrAddImage(GameObject target, out Image image)
     {
-        Image image = target.GetComponent<Image>();
+        image = target.GetComponent<Image>();
         if (image == null)
         {
+            Graphic existingGraphic = target.GetComponent<Graphic>();
+            if (existingGraphic != null)
+            {
+                return false;
+            }
+
             image = target.AddComponent<Image>();
         }
 
-        return image;
+        return image != null;
     }
 
     private static Sprite GetPlaqueBackgroundSprite()

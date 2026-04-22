@@ -302,17 +302,20 @@ public class Chat : MonoBehaviour
             RectTransform rect = dialogueText.GetComponent<RectTransform>();
             if (rect != null)
             {
-                rect.anchorMin = new Vector2(0.06f, 0.26f);
-                rect.anchorMax = new Vector2(0.94f, 0.66f);
+                rect.anchorMin = new Vector2(0.05f, 0.12f);
+                rect.anchorMax = new Vector2(0.95f, 0.60f);
                 rect.anchoredPosition = Vector2.zero;
                 rect.sizeDelta = Vector2.zero;
                 
                 // 设置文字样式
-                dialogueText.fontSize = 20;
+                dialogueText.fontSize = 44;
+                dialogueText.enableAutoSizing = true;
+                dialogueText.fontSizeMin = 32;
+                dialogueText.fontSizeMax = 44;
                 dialogueText.alignment = TextAlignmentOptions.TopLeft;
                 dialogueText.enableWordWrapping = true;
                 dialogueText.overflowMode = TextOverflowModes.Truncate;
-                dialogueText.lineSpacing = 1.2f;
+                dialogueText.lineSpacing = 0.95f;
             }
         }
         
@@ -748,7 +751,7 @@ public class Chat : MonoBehaviour
                 Debug.Log($"  ✅ 激活说话者名字组件");
             }
 
-            ensuredSpeakerText.text = speaker;
+            ensuredSpeakerText.text = FormatSpeakerName(speaker);
             Debug.Log($"  📝 显示说话者: {speaker}");
         }
         else
@@ -787,6 +790,8 @@ public class Chat : MonoBehaviour
     {
         if (speakerNameText != null)
         {
+            EnsureSpeakerNameTextParent(speakerNameText);
+            ApplySpeakerNameTextLayout(speakerNameText);
             return speakerNameText;
         }
 
@@ -815,8 +820,40 @@ public class Chat : MonoBehaviour
             speakerNameText.font = chineseFontAsset;
         }
 
+        EnsureSpeakerNameTextParent(speakerNameText);
         ApplySpeakerNameTextLayout(speakerNameText);
         return speakerNameText;
+    }
+
+    void EnsureSpeakerNameTextParent(TMP_Text target)
+    {
+        if (target == null || dialoguePanel == null)
+        {
+            return;
+        }
+
+        if (target.transform.parent != dialoguePanel.transform)
+        {
+            target.transform.SetParent(dialoguePanel.transform, false);
+        }
+
+        target.gameObject.layer = dialoguePanel.layer;
+    }
+
+    static string FormatSpeakerName(string speaker)
+    {
+        if (string.IsNullOrWhiteSpace(speaker))
+        {
+            return string.Empty;
+        }
+
+        string trimmedSpeaker = speaker.Trim();
+        if (trimmedSpeaker.StartsWith("【") && trimmedSpeaker.EndsWith("】"))
+        {
+            return trimmedSpeaker;
+        }
+
+        return $"【{trimmedSpeaker}】";
     }
 
     void ApplySpeakerNameTextLayout(TMP_Text target)
@@ -829,18 +866,18 @@ public class Chat : MonoBehaviour
         RectTransform rect = target.GetComponent<RectTransform>();
         if (rect != null)
         {
-            rect.anchorMin = new Vector2(0.07f, 0.72f);
-            rect.anchorMax = new Vector2(0.42f, 0.91f);
+            rect.anchorMin = new Vector2(0.05f, 0.62f);
+            rect.anchorMax = new Vector2(0.95f, 0.86f);
             rect.anchoredPosition = Vector2.zero;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             rect.sizeDelta = Vector2.zero;
         }
 
-        target.fontSize = 24;
+        target.fontSize = 52;
         target.enableAutoSizing = true;
-        target.fontSizeMin = 16;
-        target.fontSizeMax = 24;
+        target.fontSizeMin = 38;
+        target.fontSizeMax = 52;
         target.alignment = TextAlignmentOptions.Left;
         target.color = new Color(0.93f, 0.82f, 0.52f, 1f);
         target.fontStyle = FontStyles.Bold;
@@ -1338,7 +1375,7 @@ public class Chat : MonoBehaviour
         {
             ApplySpeakerNameTextLayout(ensuredSpeakerText);
             ensuredSpeakerText.gameObject.SetActive(true);
-            ensuredSpeakerText.text = "玩家";
+            ensuredSpeakerText.text = FormatSpeakerName("玩家");
         }
         currentFullText = "多谢兄台。后会有期。";
         
@@ -1362,7 +1399,7 @@ public class Chat : MonoBehaviour
         {
             ApplySpeakerNameTextLayout(ensuredSpeakerText);
             ensuredSpeakerText.gameObject.SetActive(true);
-            ensuredSpeakerText.text = "听雨书生";
+            ensuredSpeakerText.text = FormatSpeakerName("听雨书生");
         }
         currentFullText = "不必谢。这园子，本就该有人来修，有人来守。";
         

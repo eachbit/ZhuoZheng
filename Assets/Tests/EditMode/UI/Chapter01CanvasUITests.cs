@@ -10,6 +10,28 @@ namespace ZhuozhengYuan.Tests.EditMode
     public class Chapter01CanvasUITests
     {
         [Test]
+        public void TmpSettings_ShouldHaveBuildSafeChineseFallbackFont()
+        {
+            const string hudSampleText = "\u6b8b\u9875\u63d0\u793a\u524d\u5f80\u76ee\u6807\u5730\u70b9\u6e38\u73a9\u7ed3\u675f";
+
+            Assert.IsNotNull(TMP_Settings.instance, "TMP Settings must be available from Resources.");
+            Assert.IsNotNull(TMP_Settings.fallbackFontAssets, "TMP fallback font list must be configured.");
+            Assert.IsNotEmpty(TMP_Settings.fallbackFontAssets, "A Chinese fallback font must be referenced so builds do not render HUD text as missing-glyph boxes.");
+
+            bool hasChineseCoverage = false;
+            foreach (TMP_FontAsset fontAsset in TMP_Settings.fallbackFontAssets)
+            {
+                if (fontAsset != null && fontAsset.HasCharacters(hudSampleText))
+                {
+                    hasChineseCoverage = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(hasChineseCoverage, "At least one TMP fallback font must contain common Chinese HUD glyphs.");
+        }
+
+        [Test]
         public void SetObjective_ShouldWriteObjectiveText()
         {
             Type uiType = Type.GetType("ZhuozhengYuan.Chapter01CanvasUI, Assembly-CSharp");

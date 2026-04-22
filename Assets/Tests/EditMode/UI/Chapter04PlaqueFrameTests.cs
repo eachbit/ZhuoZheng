@@ -44,6 +44,8 @@ namespace ZhuozhengYuan.Tests.EditMode
 
             GameObject root = new GameObject("ChatRoot");
             GameObject dialoguePanel = CreateUiObject("DialoguePanel");
+            GameObject speakerNameText = CreateTextChild("SpeakerNameText", dialoguePanel.transform);
+            GameObject dialogueText = CreateTextChild("DialogueText", dialoguePanel.transform);
             GameObject choicesPanel = CreateUiObject("ChoicesPanel");
             GameObject systemPromptPanel = CreateUiObject("SystemPromptPanel");
             GameObject systemPromptText = CreateTextChild("SystemPromptText", systemPromptPanel.transform);
@@ -57,6 +59,8 @@ namespace ZhuozhengYuan.Tests.EditMode
             {
                 MonoBehaviour chat = (MonoBehaviour)root.AddComponent(chatType);
                 SetField(chat, "dialoguePanel", dialoguePanel);
+                SetField(chat, "speakerNameText", speakerNameText.GetComponent<TextMeshProUGUI>());
+                SetField(chat, "dialogueText", dialogueText.GetComponent<TextMeshProUGUI>());
                 SetField(chat, "choicesPanel", choicesPanel);
                 SetField(chat, "systemPromptPanel", systemPromptPanel);
                 SetField(chat, "systemPromptText", systemPromptText.GetComponent<TextMeshProUGUI>());
@@ -79,6 +83,15 @@ namespace ZhuozhengYuan.Tests.EditMode
                 RectTransform dialogueRect = dialoguePanel.GetComponent<RectTransform>();
                 Assert.AreEqual(new Vector2(0.12f, 0.06f), dialogueRect.anchorMin);
                 Assert.AreEqual(new Vector2(0.88f, 0.31f), dialogueRect.anchorMax);
+
+                TextMeshProUGUI speakerText = speakerNameText.GetComponent<TextMeshProUGUI>();
+                Assert.GreaterOrEqual(speakerText.fontSize, 52f, "Chapter 04 speaker name should be readable in the dialogue frame.");
+                Assert.AreEqual(52f, speakerText.fontSizeMax);
+
+                TextMeshProUGUI bodyText = dialogueText.GetComponent<TextMeshProUGUI>();
+                Assert.GreaterOrEqual(bodyText.fontSize, 44f, "Chapter 04 dialogue body should be readable in the dialogue frame.");
+                Assert.AreEqual(44f, bodyText.fontSizeMax);
+                Assert.IsTrue(bodyText.enableAutoSizing);
 
                 RectTransform systemRect = systemPromptPanel.GetComponent<RectTransform>();
                 Assert.AreEqual(new Vector2(0.18f, 0.68f), systemRect.anchorMin);
@@ -282,9 +295,45 @@ namespace ZhuozhengYuan.Tests.EditMode
 
                 TextMeshProUGUI speakerText = speakerObject.GetComponent<TextMeshProUGUI>();
                 Assert.IsNotNull(speakerText, "The generated speaker name object should contain TextMeshProUGUI.");
-                Assert.AreEqual("听雨书生", speakerText.text);
+                Assert.AreEqual("【听雨书生】", speakerText.text);
                 Assert.IsTrue(speakerText.gameObject.activeSelf);
                 Assert.AreSame(speakerText, GetField(chat, "speakerNameText"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(dialoguePanel);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void ShowCurrentLine_ShouldPlaceAssignedSpeakerNameInsideDialoguePanel()
+        {
+            Type chatType = Type.GetType("Chat, Assembly-CSharp");
+            Assert.IsNotNull(chatType, "Chat was not found.");
+
+            GameObject root = new GameObject("ChatRoot");
+            GameObject dialoguePanel = CreateUiObject("DialoguePanel");
+            GameObject dialogueTextObject = CreateTextChild("DialogueText", dialoguePanel.transform);
+            GameObject misplacedSpeaker = CreateTextChild("SpeakerNameText", root.transform);
+
+            try
+            {
+                MonoBehaviour chat = (MonoBehaviour)root.AddComponent(chatType);
+                SetField(chat, "dialoguePanel", dialoguePanel);
+                SetField(chat, "dialogueText", dialogueTextObject.GetComponent<TextMeshProUGUI>());
+                SetField(chat, "speakerNameText", misplacedSpeaker.GetComponent<TextMeshProUGUI>());
+
+                Invoke(chat, "InitializeDialogueData");
+                SetField(chat, "currentStage", 0);
+                SetField(chat, "currentLineIndex", 0);
+
+                Invoke(chat, "ShowCurrentLine");
+
+                TextMeshProUGUI speakerText = (TextMeshProUGUI)GetField(chat, "speakerNameText");
+                Assert.AreSame(dialoguePanel.transform, speakerText.transform.parent, "Assigned speaker text should be moved into the visible dialogue panel.");
+                Assert.AreEqual("【听雨书生】", speakerText.text);
+                Assert.IsTrue(speakerText.gameObject.activeSelf);
             }
             finally
             {

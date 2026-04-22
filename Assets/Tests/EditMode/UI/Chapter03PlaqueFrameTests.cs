@@ -39,6 +39,25 @@ namespace ZhuozhengYuan.Tests.EditMode
         }
 
         [Test]
+        public void ApplyPanel_ShouldNotAddImageWhenTargetAlreadyHasTextGraphic()
+        {
+            Type frameType = Type.GetType("Chapter03PlaqueFrame, Assembly-CSharp");
+            Assert.IsNotNull(frameType, "Chapter03PlaqueFrame was not found.");
+
+            GameObject textGraphic = new GameObject("Chapter03TextGraphic", typeof(RectTransform), typeof(TextMeshProUGUI));
+
+            try
+            {
+                Assert.DoesNotThrow(() => InvokeStatic(frameType, "ApplyPanel", textGraphic));
+                Assert.IsNull(textGraphic.GetComponent<Image>(), "A text Graphic cannot also contain an Image component.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(textGraphic);
+            }
+        }
+
+        [Test]
         public void ApplyHintFrame_ShouldCreateSiblingFrameBehindText()
         {
             Type frameType = Type.GetType("Chapter03PlaqueFrame, Assembly-CSharp");
